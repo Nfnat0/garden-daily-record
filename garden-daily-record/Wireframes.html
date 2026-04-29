@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Wireframes — 生活・学習ログ管理ツール</title>
+<link rel="stylesheet" href="wireframes.css" />
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: 'Kalam', cursive; background: #f0eee9; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="wf-primitives.jsx"></script>
+<script type="text/babel" src="wf-direction-a.jsx"></script>
+<script type="text/babel" src="wf-direction-b.jsx"></script>
+<script type="text/babel" src="wf-direction-c.jsx"></script>
+<script type="text/babel" src="wf-direction-d.jsx"></script>
+<script type="text/babel">
+  const W = 280, H = 460;
+
+  function Frame({ children }) {
+    return (
+      <div style={{ width: '100%', height: '100%', overflow: 'hidden', borderRadius: 6 }}>
+        {children}
+      </div>
+    );
+  }
+
+  function App() {
+    return (
+      <DesignCanvas>
+        <DCSection
+          id="intro"
+          title="生活・学習ログ管理ツール — ワイヤーフレーム探索"
+          subtitle="4方向 × 主要画面 (今日の入力 / ダッシュボード)。気に入った方向を選んで、高解像度プロトタイプに進めます。">
+          <DCArtboard id="readme" label="読み方" width={420} height={H}>
+            <div style={{ padding: 28, height: '100%', background: '#fafaf7', boxSizing: 'border-box', fontFamily: 'Kalam, cursive', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>4 directions</div>
+              <div style={{ fontSize: 13, lineHeight: 1.55, color: '#3a3a3a' }}>
+                想定要件：<br />
+                ・GitHub上のMarkdownを正本に<br />
+                ・1画面で素早く記録<br />
+                ・RPG的なステータス/レベル/バッジ<br />
+                ・ライト/ダーク両対応<br />
+                ・GitHubは隠す
+              </div>
+              <div style={{ height: 1, background: '#1a1a1a', opacity: 0.2 }}></div>
+              <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+                <b>A — Terminal</b><br />
+                <span style={{ color: '#666' }}>$ プロンプトに記録。CLIっぽい。</span><br /><br />
+                <b>B — RPG sheet</b><br />
+                <span style={{ color: '#666' }}>キャラシート風。クエスト消化感。</span><br /><br />
+                <b>C — Retro PC</b><br />
+                <span style={{ color: '#666' }}>80年代PC、ピクセル装飾。</span><br /><br />
+                <b>D — Garden</b><br />
+                <span style={{ color: '#666' }}>植物が育つ。水やりメタファー。</span>
+              </div>
+              <div style={{ marginTop: 'auto', fontSize: 11, color: '#d4501e', fontFamily: 'Architects Daughter, cursive' }}>
+                ↳ 各方向 2画面ずつ。両端ドラッグで並び替え可。
+              </div>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="dirA" title="A · ターミナル / 開発者風" subtitle="モノスペース、$ プロンプト、ASCII的な可視化。会社端末で目立たない。">
+          <DCArtboard id="a-today" label="A1 · 今日の入力" width={W} height={H}>
+            <Frame><WfA_Today /></Frame>
+          </DCArtboard>
+          <DCArtboard id="a-dash" label="A2 · ダッシュボード" width={W} height={H}>
+            <Frame><WfA_Dashboard /></Frame>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="dirB" title="B · RPGキャラシート" subtitle="クエスト形式。ステータス値・バッジ・レベルアップが主役。">
+          <DCArtboard id="b-today" label="B1 · 今日のクエスト" width={W} height={H}>
+            <Frame><WfB_Today /></Frame>
+          </DCArtboard>
+          <DCArtboard id="b-dash" label="B2 · キャラ画面" width={W} height={H}>
+            <Frame><WfB_Dashboard /></Frame>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="dirC" title="C · レトロフューチャー" subtitle="80年代PC、ピクセル罫線、ネオン。F1/F2キー的UI。">
+          <DCArtboard id="c-today" label="C1 · DAILY LOG" width={W} height={H}>
+            <Frame><WfC_Today /></Frame>
+          </DCArtboard>
+          <DCArtboard id="c-dash" label="C2 · STATUS" width={W} height={H}>
+            <Frame><WfC_Dashboard /></Frame>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="dirD" title="D · Garden / 有機的成長" subtitle="習慣 = 植物。水やり = 記録。ストリーク = 成長。">
+          <DCArtboard id="d-today" label="D1 · 今日の手入れ" width={W} height={H}>
+            <Frame><WfD_Today /></Frame>
+          </DCArtboard>
+          <DCArtboard id="d-dash" label="D2 · あなたの庭" width={W} height={H}>
+            <Frame><WfD_Dashboard /></Frame>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

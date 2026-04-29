@@ -1,0 +1,325 @@
+/* ─────────────────────────────────────────────────────────────
+   Garden — Design System
+   有機的・植物が育つメタファー、ライト/ダーク両対応
+   ───────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ── Light theme: sun-bleached paper, moss, terracotta ── */
+  --bg: #f4f0e4;
+  --bg-warm: #ebe5d3;
+  --bg-card: #fbf8ee;
+  --bg-sunk: #e8e2cf;
+  --ink: #2a2a22;
+  --ink-soft: #5a5a4a;
+  --ink-faint: #8a866e;
+  --line: #d8d2bd;
+  --line-soft: #ebe5d3;
+
+  /* greens — moss to forest */
+  --leaf-50:  #eef3e3;
+  --leaf-100: #d8e4bf;
+  --leaf-300: #a4bf7a;
+  --leaf-500: #6e8f4a;
+  --leaf-700: #4a6a2e;
+  --leaf-900: #2a3e1c;
+
+  /* earth — soil and bark */
+  --earth-300: #c4a574;
+  --earth-500: #8a6638;
+  --earth-700: #4a3a22;
+
+  /* bloom — accents */
+  --bloom: #d4501e;       /* terracotta — primary accent */
+  --bloom-soft: #f4b89a;
+  --petal: #d8709a;       /* flower pink */
+  --pollen: #e8b84a;      /* yellow */
+  --sky: #8aaac0;         /* sky for "weather" */
+
+  /* state */
+  --watered: #6e8f4a;
+  --thirsty: #c4a574;
+  --wilting: #b87750;
+
+  /* fonts */
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Inter', -apple-system, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* radii */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+
+  /* shadows */
+  --shadow-sm: 0 1px 2px rgba(74, 58, 34, 0.08);
+  --shadow-md: 0 4px 16px rgba(74, 58, 34, 0.10), 0 1px 2px rgba(74, 58, 34, 0.06);
+  --shadow-lg: 0 12px 40px rgba(74, 58, 34, 0.14), 0 2px 6px rgba(74, 58, 34, 0.08);
+  --shadow-inset: inset 0 1px 2px rgba(74, 58, 34, 0.08);
+}
+
+[data-theme="dark"] {
+  --bg: #181a14;
+  --bg-warm: #20221a;
+  --bg-card: #242720;
+  --bg-sunk: #14160f;
+  --ink: #ece8d4;
+  --ink-soft: #b4b09a;
+  --ink-faint: #7a7660;
+  --line: #34372d;
+  --line-soft: #2a2c24;
+
+  --leaf-50:  #243020;
+  --leaf-100: #2e3e26;
+  --leaf-300: #6e8f4a;
+  --leaf-500: #94b06a;
+  --leaf-700: #b8d090;
+  --leaf-900: #d4e4b0;
+
+  --earth-300: #8a6638;
+  --earth-500: #b08858;
+  --earth-700: #d4b890;
+
+  --bloom: #e8704a;
+  --bloom-soft: #6a3820;
+  --petal: #e890b0;
+  --pollen: #f0c870;
+  --sky: #a0b8cc;
+
+  --watered: #94b06a;
+  --thirsty: #b08858;
+  --wilting: #d4906a;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Reset ─────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+/* ── Typography utilities ─────────────────────────────── */
+.serif { font-family: var(--serif); font-optical-sizing: auto; font-variation-settings: 'SOFT' 50; }
+.mono { font-family: var(--mono); }
+
+.t-display {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 56px;
+  line-height: 1.05;
+  letter-spacing: -1.5px;
+  font-variation-settings: 'SOFT' 60, 'opsz' 144;
+}
+.t-hero {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 40px;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  font-variation-settings: 'SOFT' 50, 'opsz' 100;
+}
+.t-h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+.t-h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
+}
+.t-eyebrow {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.t-body { font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
+.t-body-strong { font-size: 14px; line-height: 1.55; color: var(--ink); font-weight: 500; }
+.t-small { font-size: 12px; line-height: 1.45; color: var(--ink-soft); }
+.t-tiny { font-size: 11px; line-height: 1.4; color: var(--ink-faint); }
+.t-num {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' on;
+}
+
+/* ── Cards ────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 20px;
+}
+.card-flat {
+  background: var(--bg-warm);
+  border-radius: var(--r-lg);
+  padding: 20px;
+}
+.card-sunk {
+  background: var(--bg-sunk);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-inset);
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+.btn {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 13px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--bg-card);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all .15s;
+}
+.btn:hover { background: var(--bg-warm); border-color: var(--ink-faint); }
+.btn-primary {
+  background: var(--leaf-700);
+  color: var(--bg);
+  border-color: var(--leaf-700);
+}
+.btn-primary:hover { background: var(--leaf-900); border-color: var(--leaf-900); }
+[data-theme="dark"] .btn-primary { background: var(--leaf-500); color: #14160f; border-color: var(--leaf-500); }
+[data-theme="dark"] .btn-primary:hover { background: var(--leaf-700); border-color: var(--leaf-700); }
+.btn-bloom {
+  background: var(--bloom);
+  color: white;
+  border-color: var(--bloom);
+}
+.btn-bloom:hover { filter: brightness(0.92); }
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-ghost:hover { background: var(--bg-warm); }
+.btn-lg { padding: 12px 22px; font-size: 14px; }
+
+/* ── Chips ────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--bg-warm);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.chip-leaf { background: var(--leaf-50); color: var(--leaf-700); border-color: var(--leaf-100); }
+.chip-bloom { background: var(--bloom-soft); color: var(--bloom); border-color: var(--bloom-soft); }
+.chip-pollen { background: color-mix(in oklab, var(--pollen) 30%, var(--bg-card)); color: var(--earth-700); border-color: color-mix(in oklab, var(--pollen) 50%, var(--bg-card)); }
+
+/* ── Inputs ───────────────────────────────────────────── */
+.input {
+  font-family: var(--sans);
+  font-size: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-card);
+  color: var(--ink);
+  width: 100%;
+  outline: none;
+  transition: border-color .15s, background .15s;
+}
+.input:focus { border-color: var(--leaf-500); background: var(--bg-card); }
+.input::placeholder { color: var(--ink-faint); }
+textarea.input { resize: vertical; min-height: 72px; line-height: 1.5; }
+
+/* ── Toggle / segmented ───────────────────────────────── */
+.seg {
+  display: inline-flex;
+  background: var(--bg-warm);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 3px;
+}
+.seg-btn {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.seg-btn.active { background: var(--bg-card); color: var(--ink); box-shadow: var(--shadow-sm); }
+
+/* ── Plant SVG presets ────────────────────────────────── */
+.plant { display: inline-block; }
+.plant-leaf { fill: var(--leaf-500); }
+.plant-stem { stroke: var(--leaf-700); }
+.plant-soil { fill: var(--earth-500); }
+.plant-bloom { fill: var(--bloom); }
+.plant-pot { fill: var(--earth-300); }
+
+/* ── Sparkline / progress ─────────────────────────────── */
+.bar-track { height: 6px; background: var(--bg-sunk); border-radius: var(--r-pill); overflow: hidden; }
+.bar-fill { height: 100%; background: var(--leaf-500); border-radius: var(--r-pill); transition: width .4s cubic-bezier(.2,.7,.3,1); }
+.bar-fill-bloom { background: var(--bloom); }
+
+/* ── Divider ──────────────────────────────────────────── */
+.divider { height: 1px; background: var(--line); }
+.divider-soft { height: 1px; background: var(--line-soft); }
+
+/* ── Utility ──────────────────────────────────────────── */
+.row { display: flex; }
+.col { display: flex; flex-direction: column; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.gap-6 { gap: 24px; }
+.flex-1 { flex: 1; }
+.items-center { align-items: center; }
+.items-end { align-items: flex-end; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.text-center { text-align: center; }
+
+/* hide scrollbars on overflow regions inside the app shell */
+.scroll { overflow: auto; }
+.scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+.scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* tiny weather glyph */
+.glyph { width: 14px; height: 14px; vertical-align: -2px; }
+
+/* subtle paper grain on the body */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: .035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+[data-theme="dark"] body::before { opacity: .06; mix-blend-mode: screen; }
