@@ -121,10 +121,65 @@ async function testReportsBrokenJson() {
   assert.equal(result.data.settings.schemaVersion, 1);
 }
 
+async function testReportsUnsupportedSchemaVersion() {
+  const { GardenStore } = loadDataModule();
+  const dir = new MemoryDirectoryHandle({
+    'garden.plants.json': JSON.stringify({
+      schemaVersion: 99,
+      updatedAt: '2026-04-29T00:00:00.000Z',
+      plants: [],
+    }),
+  });
+
+  const result = await GardenStore.loadFromDirectory(dir);
+
+  assert.equal(result.warnings.length, 1);
+  assert.equal(result.warnings[0].file, 'garden.plants.json');
+  assert.match(result.warnings[0].message, /schemaVersion/);
+  assert.equal(result.data.plants.schemaVersion, 1);
+  assert.equal(result.data.plants.plants.length, 6);
+}
+
+function testValidatesDuplicatePlantAndFieldIds() {
+  const { GardenSchema } = loadDataModule();
+  const plantsFile = GardenSchema.createPlantsFile();
+  plantsFile.plants = [
+    {
+      ...plantsFile.plants[0],
+      id: 'mind',
+      fields: [
+        { id: 'same', label: 'One', type: 'text', required: false },
+        { id: 'same', label: 'Two', type: 'text', required: false },
+      ],
+    },
+    { ...plantsFile.plants[1], id: 'mind' },
+  ];
+
+  const issues = GardenSchema.validatePlantsFile(plantsFile);
+
+  assert.equal(issues.some((issue) => issue.path === 'plants[1].id' && issue.code === 'duplicate_id'), true);
+  assert.equal(issues.some((issue) => issue.path === 'plants[0].fields[1].id' && issue.code === 'duplicate_id'), true);
+}
+
+async function testRejectsInvalidPlantsFileOnSave() {
+  const { GardenSchema, GardenStore } = loadDataModule();
+  const dir = new MemoryDirectoryHandle();
+  const plantsFile = GardenSchema.createPlantsFile();
+  plantsFile.plants[1] = { ...plantsFile.plants[1], id: plantsFile.plants[0].id };
+
+  await assert.rejects(
+    () => GardenStore.saveFile(dir, 'plants', plantsFile),
+    /duplicate/i,
+  );
+}
+
 async function run() {
   await testCreatesDefaultFiles();
   await testCalculatesDerivedGardenState();
   await testReportsBrokenJson();
+  await testReportsUnsupportedSchemaVersion();
+  testValidatesDuplicatePlantAndFieldIds();
+  await testRejectsInvalidPlantsFileOnSave();
   console.log('garden-store tests passed');
 }
 
