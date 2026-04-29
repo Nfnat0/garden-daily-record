@@ -288,6 +288,81 @@
     };
   }
 
+  function unsupportedSchemaVersion(value) {
+    if (!value || typeof value !== 'object' || value.schemaVersion == null) return null;
+    const version = Number(value.schemaVersion);
+    if (!Number.isFinite(version) || version > SCHEMA_VERSION) return value.schemaVersion;
+    return null;
+  }
+
+  function makeIssue(path, code, message) {
+    return { path, code, message };
+  }
+
+  function validateField(field, path, seenIds) {
+    const issues = [];
+    const rawId = String(field?.id || '').trim();
+    const id = safeId(rawId);
+    if (!rawId) {
+      issues.push(makeIssue(`${path}.id`, 'required', 'Field ID is required.'));
+    } else if (seenIds.has(id)) {
+      issues.push(makeIssue(`${path}.id`, 'duplicate_id', `Duplicate field ID: ${id}`));
+    } else {
+      seenIds.add(id);
+    }
+    if (!String(field?.label || '').trim()) {
+      issues.push(makeIssue(`${path}.label`, 'required', 'Field label is required.'));
+    }
+    if (!FIELD_TYPES.includes(field?.type)) {
+      issues.push(makeIssue(`${path}.type`, 'invalid_type', `Field type must be one of: ${FIELD_TYPES.join(', ')}`));
+    }
+    const options = Array.isArray(field?.options)
+      ? field.options.map(String).map((x) => x.trim()).filter(Boolean)
+      : [];
+    if (field?.type === 'select' && options.length === 0) {
+      issues.push(makeIssue(`${path}.options`, 'required', 'Select fields need at least one option.'));
+    }
+    return issues;
+  }
+
+  function validatePlantsFile(value) {
+    const issues = [];
+    const plants = Array.isArray(value?.plants) ? value.plants : [];
+    const seenPlantIds = new Set();
+    plants.forEach((plant, plantIndex) => {
+      if (plant?.deletedAt) return;
+      const path = `plants[${plantIndex}]`;
+      const rawId = String(plant?.id || '').trim();
+      const id = safeId(rawId);
+      if (!rawId) {
+        issues.push(makeIssue(`${path}.id`, 'required', 'Plant ID is required.'));
+      } else if (seenPlantIds.has(id)) {
+        issues.push(makeIssue(`${path}.id`, 'duplicate_id', `Duplicate plant ID: ${id}`));
+      } else {
+        seenPlantIds.add(id);
+      }
+      if (!String(plant?.jp || plant?.name || '').trim()) {
+        issues.push(makeIssue(`${path}.name`, 'required', 'Plant name is required.'));
+      }
+      const fields = Array.isArray(plant?.fields) ? plant.fields.filter((field) => !field?.deletedAt) : [];
+      if (fields.length === 0) {
+        issues.push(makeIssue(`${path}.fields`, 'required', 'Plant needs at least one field.'));
+      }
+      const seenFieldIds = new Set();
+      fields.forEach((field, fieldIndex) => {
+        issues.push(...validateField(field, `${path}.fields[${fieldIndex}]`, seenFieldIds));
+      });
+    });
+    return issues;
+  }
+
+  function validationError(key, issues) {
+    const fileName = FILES[key] || key;
+    const message = issues.slice(0, 3).map((issue) => issue.message).join(' ');
+    const suffix = issues.length > 3 ? ` (+${issues.length - 3} more)` : '';
+    return new Error(`${fileName} validation failed: ${message}${suffix}`);
+  }
+
   function normalizeData(data) {
     return {
       settings: normalizeSettings(data?.settings),
@@ -501,7 +576,13 @@
       const handle = await directoryHandle.getFileHandle(fileName);
       const file = await handle.getFile();
       const text = await file.text();
-      return normalize(JSON.parse(text));
+      const parsed = JSON.parse(text);
+      const unsupported = unsupportedSchemaVersion(parsed);
+      if (unsupported != null) {
+        warnings.push({ file: fileName, message: `Unsupported schemaVersion ${unsupported}; using defaults for this file.` });
+        return fallbackFactory();
+      }
+      return normalize(parsed);
     } catch (err) {
       if (err?.name === 'NotFoundError') {
         const fallback = fallbackFactory();
@@ -537,6 +618,10 @@
     const fileName = FILES[key];
     if (!fileName) throw new Error(`Unknown garden file key: ${key}`);
     const data = touchFile(value);
+    if (key === 'plants') {
+      const issues = validatePlantsFile(data);
+      if (issues.length) throw validationError(key, issues);
+    }
     await writeJsonFile(directoryHandle, fileName, data);
     return data;
   }
@@ -590,6 +675,7 @@
     normalizePlantsFile,
     normalizeEntriesFile,
     normalizeLibraryFile,
+    validatePlantsFile,
     safeId,
     todayKey,
     fmtDate,

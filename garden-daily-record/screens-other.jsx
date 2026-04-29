@@ -1,4 +1,4 @@
-/* global React, Plant, GardenSchema, GardenCalc */
+/* global React, Plant, GardenSchema, GardenCalc, window */
 // Library + Study log + Settings screens backed by JSON data.
 
 const { useEffect: useEffectL, useMemo: useMemoL, useState: useStateL } = React;
@@ -30,6 +30,7 @@ function LibraryScreen({ data, summary, onSaveLibrary, storageBusy }) {
   };
 
   const deleteItem = async (kind, id) => {
+    if (!confirmDanger('Delete this library item?')) return;
     const file = cloneJson(data.library);
     file[kind] = (file[kind] || []).map((item) => item.id === id
       ? { ...item, deletedAt: GardenSchema.nowIso(), updatedAt: GardenSchema.nowIso() }
@@ -84,7 +85,9 @@ function LibraryScreen({ data, summary, onSaveLibrary, storageBusy }) {
 function LibraryEditor({ kind, initial, storageBusy, onCancel, onSave }) {
   const [draft, setDraft] = useStateL(() => ({ ...initial, tagsText: (initial.tags || []).join(', ') }));
   const set = (key, value) => setDraft((prev) => ({ ...prev, [key]: value }));
+  const issues = validateLibraryDraft(kind, draft);
   const save = () => {
+    if (issues.length) return;
     const { tagsText, ...item } = draft;
     onSave({ ...item, tags: tagsText });
   };
@@ -116,8 +119,9 @@ function LibraryEditor({ kind, initial, storageBusy, onCancel, onSave }) {
       </div>
       <div className="row justify-between items-center">
         <span className="t-tiny mono">{draft.id || 'new item'}</span>
-        <button className="btn btn-primary" disabled={storageBusy || !String(draft.title || '').trim()} onClick={save}>保存</button>
+        <button className="btn btn-primary" disabled={storageBusy || issues.length > 0} onClick={save}>保存</button>
       </div>
+      {issues.length > 0 && <ValidationList issues={issues} />}
     </div>
   );
 }
@@ -241,6 +245,7 @@ function StudyScreen({ summary }) {
 function SettingsScreen({ data, onSavePlants, onSaveSettings, storageBusy, warnings }) {
   const plants = useMemoL(() => (data.plants.plants || []).filter((p) => !p.deletedAt).slice().sort((a, b) => (a.sort || 0) - (b.sort || 0)), [data.plants]);
   const [editingPlant, setEditingPlant] = useStateL(null);
+  const [plantError, setPlantError] = useStateL('');
   const [settingsDraft, setSettingsDraft] = useStateL(() => ({ ...data.settings }));
 
   useEffectL(() => {
@@ -250,13 +255,21 @@ function SettingsScreen({ data, onSavePlants, onSaveSettings, storageBusy, warni
   const savePlantFile = async (nextPlants) => {
     await onSavePlants({ ...data.plants, plants: nextPlants });
     setEditingPlant(null);
+    setPlantError('');
   };
 
   const upsertPlant = async (plant) => {
+    const rawIssues = validatePlantDraft(plant);
+    if (rawIssues.length) {
+      setPlantError(formatValidationIssues(rawIssues));
+      return;
+    }
     const next = cloneJson(data.plants.plants || []);
     const now = GardenSchema.nowIso();
+    const originalId = plant.__originalId || plant.id;
+    const { __originalId, ...plantData } = plant;
     const normalized = {
-      ...plant,
+      ...plantData,
       id: GardenSchema.safeId(plant.id || plant.name || plant.jp),
       name: plant.name || GardenSchema.safeId(plant.jp),
       jp: plant.jp || plant.name || '新しい植物',
@@ -265,11 +278,18 @@ function SettingsScreen({ data, onSavePlants, onSaveSettings, storageBusy, warni
       fields: (plant.fields || []).map((field, i) => normalizeFieldDraft(field, i)),
       updatedAt: now,
     };
-    const idx = next.findIndex((p) => p.id === normalized.id);
-    await savePlantFile(idx >= 0 ? next.map((p) => p.id === normalized.id ? normalized : p) : [...next, normalized]);
+    const hasOriginal = originalId && next.some((p) => p.id === originalId);
+    const nextPlants = hasOriginal ? next.map((p) => p.id === originalId ? normalized : p) : [...next, normalized];
+    const issues = GardenSchema.validatePlantsFile({ ...data.plants, plants: nextPlants });
+    if (issues.length) {
+      setPlantError(formatValidationIssues(issues));
+      return;
+    }
+    await savePlantFile(nextPlants);
   };
 
   const softDeletePlant = async (id) => {
+    if (!confirmDanger('Delete this plant? Existing daily entries will remain in JSON but the plant is hidden from the app.')) return;
     const next = (data.plants.plants || []).map((p) => p.id === id ? { ...p, deletedAt: GardenSchema.nowIso() } : p);
     await savePlantFile(next);
   };
@@ -326,7 +346,8 @@ function SettingsScreen({ data, onSavePlants, onSaveSettings, storageBusy, warni
         <PlantEditor
           initial={editingPlant}
           storageBusy={storageBusy}
-          onCancel={() => setEditingPlant(null)}
+          error={plantError}
+          onCancel={() => { setEditingPlant(null); setPlantError(''); }}
           onSave={upsertPlant}
         />
       )}
@@ -334,7 +355,7 @@ function SettingsScreen({ data, onSavePlants, onSaveSettings, storageBusy, warni
       <div className="card" style={{ padding: 22 }}>
         <div className="row justify-between items-center" style={{ marginBottom: 14 }}>
           <div className="t-eyebrow">plants · 管理項目</div>
-          <button className="btn btn-primary" onClick={() => setEditingPlant(createPlantDraft(plants.length))}>新しい植物</button>
+          <button className="btn btn-primary" onClick={() => { setPlantError(''); setEditingPlant(createPlantDraft(plants.length)); }}>新しい植物</button>
         </div>
         <div className="col gap-2">
           {plants.map((p, i) => (
@@ -352,7 +373,7 @@ function SettingsScreen({ data, onSavePlants, onSaveSettings, storageBusy, warni
                 <button className="btn btn-ghost" disabled={i === 0} onClick={() => movePlant(p.id, -1)}>↑</button>
                 <button className="btn btn-ghost" disabled={i === plants.length - 1} onClick={() => movePlant(p.id, 1)}>↓</button>
                 <button className="btn btn-ghost" onClick={() => toggleVisible(p.id)}>{p.visible === false ? '表示' : '非表示'}</button>
-                <button className="btn btn-ghost" onClick={() => setEditingPlant(cloneJson(p))}>編集</button>
+                <button className="btn btn-ghost" onClick={() => { setPlantError(''); setEditingPlant({ ...cloneJson(p), __originalId: p.id }); }}>編集</button>
                 <button className="btn btn-ghost" onClick={() => softDeletePlant(p.id)}>削除</button>
               </div>
             </div>
@@ -363,8 +384,9 @@ function SettingsScreen({ data, onSavePlants, onSaveSettings, storageBusy, warni
   );
 }
 
-function PlantEditor({ initial, storageBusy, onCancel, onSave }) {
+function PlantEditor({ initial, storageBusy, error, onCancel, onSave }) {
   const [draft, setDraft] = useStateL(() => cloneJson(initial));
+  const issues = validatePlantDraft(draft);
   const set = (key, value) => setDraft((prev) => ({ ...prev, [key]: value }));
   const updateField = (idx, key, value) => {
     setDraft((prev) => ({
@@ -373,7 +395,10 @@ function PlantEditor({ initial, storageBusy, onCancel, onSave }) {
     }));
   };
   const addField = () => setDraft((prev) => ({ ...prev, fields: [...(prev.fields || []), createFieldDraft((prev.fields || []).length)] }));
-  const deleteField = (idx) => setDraft((prev) => ({ ...prev, fields: (prev.fields || []).filter((_, i) => i !== idx) }));
+  const deleteField = (idx) => {
+    if (!confirmDanger('Delete this field? Existing daily values for this field remain in JSON but will no longer be shown.')) return;
+    setDraft((prev) => ({ ...prev, fields: (prev.fields || []).filter((_, i) => i !== idx) }));
+  };
 
   return (
     <div className="card col gap-3" style={{ padding: 22 }}>
@@ -421,10 +446,89 @@ function PlantEditor({ initial, storageBusy, onCancel, onSave }) {
       </div>
       <div className="row justify-between">
         <span className="t-tiny mono">{draft.id || 'new plant'}</span>
-        <button className="btn btn-primary" disabled={storageBusy || !String(draft.jp || draft.name || '').trim()} onClick={() => onSave(draft)}>保存</button>
+        <button className="btn btn-primary" disabled={storageBusy || issues.length > 0} onClick={() => onSave(draft)}>保存</button>
       </div>
+      {(error || issues.length > 0) && <ValidationList issues={error ? [{ message: error }] : issues} />}
     </div>
   );
+}
+
+function ValidationList({ issues }) {
+  return (
+    <div className="notice col gap-1" style={{ color: 'var(--bloom)' }}>
+      {issues.map((issue, idx) => <div key={issue.path || idx} className="t-small">{issue.message}</div>)}
+    </div>
+  );
+}
+
+function validateLibraryDraft(kind, draft) {
+  const issues = [];
+  if (!String(draft.title || '').trim()) {
+    issues.push({ path: 'title', message: 'Title is required.' });
+  }
+  if (kind === 'articles' && String(draft.url || '').trim() && !isValidHttpUrl(draft.url)) {
+    issues.push({ path: 'url', message: 'URL must start with http:// or https://.' });
+  }
+  if (kind === 'books') {
+    const progress = Number(draft.progress || 0);
+    if (!Number.isFinite(progress) || progress < 0 || progress > 1) {
+      issues.push({ path: 'progress', message: 'Book progress must be between 0 and 100%.' });
+    }
+  }
+  return issues;
+}
+
+function validatePlantDraft(draft) {
+  const issues = [];
+  if (!String(draft.jp || draft.name || '').trim()) {
+    issues.push({ path: 'plant.name', message: 'Plant display name is required.' });
+  }
+  if (!String(draft.id || draft.name || draft.jp || '').trim()) {
+    issues.push({ path: 'plant.id', message: 'Plant ID is required.' });
+  }
+  const fields = Array.isArray(draft.fields) ? draft.fields : [];
+  if (fields.length === 0) {
+    issues.push({ path: 'fields', message: 'Add at least one field.' });
+  }
+  const seen = new Set();
+  fields.forEach((field, index) => {
+    const id = String(field.id || '').trim();
+    const normalizedId = GardenSchema.safeId(id);
+    if (!id) {
+      issues.push({ path: `fields[${index}].id`, message: 'Field ID is required.' });
+    } else if (seen.has(normalizedId)) {
+      issues.push({ path: `fields[${index}].id`, message: `Duplicate field ID: ${normalizedId}` });
+    } else {
+      seen.add(normalizedId);
+    }
+    if (!String(field.label || '').trim()) {
+      issues.push({ path: `fields[${index}].label`, message: 'Field label is required.' });
+    }
+    const options = field.optionsText != null ? normalizeTags(field.optionsText) : normalizeTags(field.options || []);
+    if (field.type === 'select' && options.length === 0) {
+      issues.push({ path: `fields[${index}].options`, message: 'Select fields need at least one option.' });
+    }
+  });
+  return issues;
+}
+
+function formatValidationIssues(issues) {
+  const messages = issues.map((issue) => issue.message).filter(Boolean);
+  return messages.slice(0, 3).join(' ') + (messages.length > 3 ? ` (+${messages.length - 3} more)` : '');
+}
+
+function isValidHttpUrl(value) {
+  try {
+    const url = new URL(String(value));
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (err) {
+    return false;
+  }
+}
+
+function confirmDanger(message) {
+  if (typeof window === 'undefined' || typeof window.confirm !== 'function') return true;
+  return window.confirm(message);
 }
 
 function InputBlock({ label, value, onChange, type = 'text', flex = 1 }) {
