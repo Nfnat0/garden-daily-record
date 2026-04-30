@@ -152,6 +152,11 @@ Garden Daily Record を、見た目の完成度が高い静的プロトタイプ
 
 ## レビュー根拠
 
+実装状況:
+
+- 2026-04-30 の実装パス1で、保存ゲートの信頼形成、メモリ内サンプルプレビュー、Todayのsticky save/progress、Dashboardの次アクション、390px overflow修正、focus-visible、faviconを実装しました。
+- 残りの主な未実装領域は、モバイルナビゲーション再設計、Library empty state、Settingsの危険操作階層、全ルートの再現可能なbrowser smoke testです。
+
 実行コマンド:
 
 ```powershell
@@ -171,7 +176,7 @@ node tools/build-garden-bundle.cjs
 
 観測された課題:
 
-- 390pxモバイルviewportの接続後画面で、`document.body.scrollWidth` が400、`window.innerWidth` が390でした。overflowしていたのはStudyチャートカードです。
+- ベースラインでは390pxモバイルviewportの接続後画面で、`document.body.scrollWidth` が400、`window.innerWidth` が390でした。実装パス1のブラウザQAではDashboardとStudyの `scrollWidth` が390に収まりました。
 
 生成された検証アーティファクト:
 

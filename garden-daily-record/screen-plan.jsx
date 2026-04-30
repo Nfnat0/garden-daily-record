@@ -34,7 +34,7 @@ function PlanScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, st
 
   if (!planPlant || !field) {
     return (
-      <div className="col gap-4" style={{ padding: '32px 40px 80px', maxWidth: 760, margin: '0 auto' }}>
+      <div className="col gap-4" style={{ padding: '32px clamp(16px, 4vw, 40px) 80px', maxWidth: 760, margin: '0 auto' }}>
         <div className="card t-body">{t('plan.empty')}</div>
       </div>
     );
@@ -44,7 +44,7 @@ function PlanScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, st
   const label = GardenI18n.displayFieldLabel(field, language);
 
   return (
-    <div className="col gap-4" style={{ padding: '32px 40px 80px', maxWidth: 760, margin: '0 auto' }}>
+    <div className="col gap-4" style={{ padding: '32px clamp(16px, 4vw, 40px) 80px', maxWidth: 760, margin: '0 auto' }}>
       <div className="col gap-2">
         <div className="t-eyebrow">{t('plan.eyebrow', { date: selectedDate })}</div>
         <div className="row justify-between items-end gap-3" style={{ flexWrap: 'wrap' }}>

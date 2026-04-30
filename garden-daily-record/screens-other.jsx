@@ -41,7 +41,7 @@ function LibraryScreen({ data, summary, onSaveLibrary, storageBusy, language, t 
   const currentItems = summary.library[tab] || [];
 
   return (
-    <div className="col gap-4" style={{ padding: '32px 40px 80px', maxWidth: 980, margin: '0 auto' }}>
+    <div className="col gap-4" style={{ padding: '32px clamp(16px, 4vw, 40px) 80px', maxWidth: 980, margin: '0 auto' }}>
       <div className="col gap-2">
         <div className="t-eyebrow">{t('library.eyebrow')}</div>
         <h1 className="t-hero" style={{ margin: 0 }}>{t('library.title')}</h1>
@@ -193,7 +193,7 @@ function StudyScreen({ summary, t }) {
   const totalHours = Math.round(totalMin / 60 * 10) / 10;
 
   return (
-    <div className="col gap-4" style={{ padding: '32px 40px 80px', maxWidth: 980, margin: '0 auto' }}>
+    <div className="col gap-4" style={{ padding: '32px clamp(16px, 4vw, 40px) 80px', maxWidth: 980, margin: '0 auto' }}>
       <div className="col gap-2">
         <div className="t-eyebrow">{t('study.eyebrow')}</div>
         <h1 className="t-hero" style={{ margin: 0 }}>{t('study.title', { hours: totalHours })}</h1>
@@ -228,10 +228,10 @@ function StudyScreen({ summary, t }) {
         <div className="col" style={{ gap: 0 }}>
           {summary.study.recentSessions.length === 0 && <div className="t-body">{t('study.noSessions')}</div>}
           {summary.study.recentSessions.map((entry, i) => (
-            <div key={entry.date} className="row items-center gap-3" style={{ padding: '12px 0', borderBottom: i < summary.study.recentSessions.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
+            <div key={entry.date} className="row items-center gap-3" style={{ padding: '12px 0', borderBottom: i < summary.study.recentSessions.length - 1 ? '1px solid var(--line-soft)' : 'none', flexWrap: 'wrap' }}>
               <span className="t-tiny mono" style={{ width: 78, color: 'var(--ink-faint)' }}>{entry.date.slice(5)}</span>
               <span className="t-tiny" style={{ width: 20 }}>{summary.dayName(entry.day)}</span>
-              <span className="chip chip-leaf">#{entry.topic}</span>
+              <span className="chip chip-leaf" style={{ maxWidth: '100%', overflowWrap: 'anywhere' }}>#{entry.topic}</span>
               <div style={{ flex: 1 }}></div>
               <span className="t-num" style={{ fontSize: 18 }}>{entry.study}</span>
               <span className="t-tiny">{t('units.minutes')}</span>
@@ -319,7 +319,7 @@ function SettingsScreen({ data, onSavePlants, onSaveSettings, storageBusy, warni
   };
 
   return (
-    <div className="col gap-4" style={{ padding: '32px 40px 80px', maxWidth: 860, margin: '0 auto' }}>
+    <div className="col gap-4" style={{ padding: '32px clamp(16px, 4vw, 40px) 80px', maxWidth: 860, margin: '0 auto' }}>
       <div className="col gap-2">
         <div className="t-eyebrow">{t('settings.eyebrow')}</div>
         <h1 className="t-hero" style={{ margin: 0 }}>{t('settings.title')}</h1>

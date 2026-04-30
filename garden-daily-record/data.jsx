@@ -9,6 +9,11 @@
     entries: 'garden.entries.json',
     library: 'garden.library.json',
   };
+  const FILE_ORDER = ['settings', 'plants', 'entries', 'library'];
+  const REMEMBERED_DIRECTORY_DB = 'garden.daily-record.storage';
+  const REMEMBERED_DIRECTORY_DB_VERSION = 1;
+  const REMEMBERED_DIRECTORY_STORE = 'handles';
+  const REMEMBERED_DIRECTORY_KEY = 'save-directory';
   const FIELD_TYPES = ['number', 'duration', 'boolean', 'select', 'text', 'textarea', 'avoidance_count'];
   const DEFAULT_TOPICS = ['system-design', 'go', 'database', 'distributed-systems', 'algorithms', 'product', 'writing', 'kubernetes'];
   const LANGUAGE_STORAGE_KEY = 'garden.language';
@@ -32,6 +37,29 @@
       'storage.status': 'storage',
       'storage.connectTitle': '保存フォルダを選択',
       'storage.connectBody': 'Garden は選択したフォルダ直下の4つのJSONファイルを読み書きします。',
+      'storage.localFirstTitle': 'データはあなたのフォルダにだけ保存されます',
+      'storage.localFirstBody': 'フォルダを選ぶと、Garden は既存ファイルを読み込み、ない場合だけ新しく作成します。クラウド送信はありません。',
+      'storage.rememberedTitle': '前回のフォルダを使えます',
+      'storage.rememberedBody': '前回選んだ「{name}」をもう一度開けます。権限確認が出る場合があります。',
+      'storage.restoreFolder': '前回のフォルダを開く',
+      'storage.restoring': '復元中...',
+      'storage.forgetFolder': '記憶を解除',
+      'storage.restoreFailed': '前回のフォルダを開けませんでした。フォルダを選び直してください。',
+      'storage.rememberFailed': 'フォルダの記憶に失敗しました。次回はもう一度選択してください。',
+      'storage.filesTitle': '作成・読み込みするファイル',
+      'storage.setupTitle': 'セットアップの流れ',
+      'storage.setupStep1': 'フォルダを選ぶ',
+      'storage.setupStep2': '4つのJSONを読み込み、なければ作成',
+      'storage.setupStep3': '以後の変更はそのフォルダに保存',
+      'storage.previewTitle': 'まずはサンプルで触ってみる',
+      'storage.previewBody': 'フォルダを選ぶ前に、ダッシュボードと今日の記録をメモリ上だけで試せます。',
+      'storage.previewButton': 'サンプルを開く',
+      'storage.previewName': 'サンプルプレビュー',
+      'storage.previewHelp': 'メモリ上のプレビューです。保存したい場合はフォルダを選んでください。',
+      'storage.previewSaved': 'プレビュー保存',
+      'storage.connectedHelp': '{name} に接続中。再読み込みはフォルダ内のJSONを読み直します。',
+      'storage.unsupportedTitle': 'Chrome または Edge で開いてください',
+      'storage.unsupportedAction': 'この機能は File System Access API を使います。localhost の Garden.html を Chrome / Edge で開くとフォルダ保存を使えます。',
       'storage.unsupported': 'このブラウザはフォルダ保存に対応していません。Chrome または Edge で localhost から開いてください。',
       'storage.connecting': '接続中...',
       'storage.pickFolder': 'フォルダを選ぶ',
@@ -53,6 +81,11 @@
       'dashboard.todayCareSub': '完了した植物',
       'dashboard.today': 'today',
       'dashboard.goToday': '記録へ',
+      'dashboard.goPlan': '予定を書く',
+      'dashboard.nextAction': '次の一歩',
+      'dashboard.planPrompt': 'まず今日の予定を1つ決めましょう。',
+      'dashboard.todayPrompt': '今日の記録を進めると庭が育ちます。',
+      'dashboard.donePrompt': '今日の手入れは完了しています。振り返りや読書メモを残せます。',
       'dashboard.todaySummary': '{done} / {total} の植物に水をあげました',
       'dashboard.studyWeeks': 'study ・ last 4 weeks',
       'dashboard.perDay': '分 / day',
@@ -72,6 +105,14 @@
       'today.noPlants': '設定画面で植物を追加してください。',
       'today.saved': '保存済み {time}',
       'today.unsaved': '未保存',
+      'today.changed': '未保存の変更があります',
+      'today.completeReady': '必須項目は入力済みです',
+      'today.missingRequired': '必須項目 {count}件が未完了',
+      'today.missingRequiredList': '未完了: {items}',
+      'today.moreMissing': 'ほか {count}件',
+      'today.planDone': '今日の予定: {plan}',
+      'today.planEmpty': '今日の予定はまだありません。',
+      'today.editPlan': '予定へ',
       'today.reset': '元に戻す',
       'today.save': '水をやる',
       'today.saving': '保存中...',
@@ -207,6 +248,29 @@
       'storage.status': 'storage',
       'storage.connectTitle': 'Choose a save folder',
       'storage.connectBody': 'Garden reads and writes four JSON files in the folder you choose.',
+      'storage.localFirstTitle': 'Your data stays in your folder',
+      'storage.localFirstBody': 'After you choose a folder, Garden reads existing files and only creates missing ones. Nothing is uploaded.',
+      'storage.rememberedTitle': 'Use your previous folder',
+      'storage.rememberedBody': 'Garden can reopen the previous folder, "{name}". Your browser may ask you to confirm access.',
+      'storage.restoreFolder': 'Open previous folder',
+      'storage.restoring': 'Restoring...',
+      'storage.forgetFolder': 'Forget folder',
+      'storage.restoreFailed': 'Garden could not open the previous folder. Choose the folder again.',
+      'storage.rememberFailed': 'Garden could not remember this folder. You may need to choose it again next time.',
+      'storage.filesTitle': 'Files Garden reads or creates',
+      'storage.setupTitle': 'Setup flow',
+      'storage.setupStep1': 'Choose a folder',
+      'storage.setupStep2': 'Read four JSON files, creating missing files',
+      'storage.setupStep3': 'Save future changes in that folder',
+      'storage.previewTitle': 'Try a sample first',
+      'storage.previewBody': 'Before choosing a folder, you can explore the dashboard and today log in memory only.',
+      'storage.previewButton': 'Open sample',
+      'storage.previewName': 'Sample preview',
+      'storage.previewHelp': 'This is an in-memory preview. Choose a folder when you want to keep your changes.',
+      'storage.previewSaved': 'Preview saved',
+      'storage.connectedHelp': 'Connected to {name}. Reload reads the JSON files in that folder again.',
+      'storage.unsupportedTitle': 'Open in Chrome or Edge',
+      'storage.unsupportedAction': 'Folder saving uses the File System Access API. Open localhost Garden.html in Chrome or Edge to use it.',
       'storage.unsupported': 'This browser does not support folder storage. Open from localhost in Chrome or Edge.',
       'storage.connecting': 'Connecting...',
       'storage.pickFolder': 'Choose folder',
@@ -228,6 +292,11 @@
       'dashboard.todayCareSub': 'Completed plants',
       'dashboard.today': 'today',
       'dashboard.goToday': 'Go log',
+      'dashboard.goPlan': 'Write plan',
+      'dashboard.nextAction': 'Next step',
+      'dashboard.planPrompt': 'Start by choosing one thing for today.',
+      'dashboard.todayPrompt': 'Log today to keep the garden growing.',
+      'dashboard.donePrompt': 'Today is cared for. You can reflect or add reading notes.',
       'dashboard.todaySummary': '{done} / {total} plants were watered',
       'dashboard.studyWeeks': 'study ・ last 4 weeks',
       'dashboard.perDay': 'min / day',
@@ -247,6 +316,14 @@
       'today.noPlants': 'Add plants from Settings.',
       'today.saved': 'Saved {time}',
       'today.unsaved': 'Unsaved',
+      'today.changed': 'Unsaved changes',
+      'today.completeReady': 'Required fields are complete',
+      'today.missingRequired': '{count} required fields missing',
+      'today.missingRequiredList': 'Missing: {items}',
+      'today.moreMissing': '{count} more',
+      'today.planDone': "Today's plan: {plan}",
+      'today.planEmpty': "Today's plan is empty.",
+      'today.editPlan': 'Plan',
       'today.reset': 'Reset',
       'today.save': 'Water',
       'today.saving': 'Saving...',
@@ -816,6 +893,10 @@
     return (plant?.fields || []).filter((f) => !f.deletedAt);
   }
 
+  function missingRequiredFields(plant, plantValues) {
+    return getActiveFields(plant).filter((field) => field.required && !isFilled(field, plantValues?.[field.id]));
+  }
+
   function isFilled(field, value) {
     if (field.type === 'boolean') return value === true || value === false;
     if (field.type === 'avoidance_count') return Number.isFinite(Number(value)) && Number(value) >= 0;
@@ -825,10 +906,8 @@
 
   function isPlantDone(plant, plantValues) {
     const fields = getActiveFields(plant);
-    const required = fields.filter((f) => f.required);
-    if (required.length) {
-      return required.every((f) => isFilled(f, plantValues?.[f.id]));
-    }
+    const required = missingRequiredFields(plant, plantValues);
+    if (fields.some((f) => f.required)) return required.length === 0;
     return fields.some((f) => isFilled(f, plantValues?.[f.id]));
   }
 
@@ -1076,10 +1155,81 @@
     return normalizeData(next);
   }
 
-  async function ensurePermission(directoryHandle) {
-    if (!directoryHandle?.queryPermission || !directoryHandle?.requestPermission) return true;
+  function supportsRememberedDirectory() {
+    return !!window.indexedDB;
+  }
+
+  function openRememberedDirectoryDb() {
+    if (!supportsRememberedDirectory()) return Promise.resolve(null);
+    return new Promise((resolve, reject) => {
+      const request = window.indexedDB.open(REMEMBERED_DIRECTORY_DB, REMEMBERED_DIRECTORY_DB_VERSION);
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(REMEMBERED_DIRECTORY_STORE)) {
+          db.createObjectStore(REMEMBERED_DIRECTORY_STORE, { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = (event) => resolve(event.target.result);
+      request.onerror = () => reject(request.error || new Error('Could not open remembered folder storage.'));
+    });
+  }
+
+  async function withRememberedDirectoryStore(mode, operation) {
+    const db = await openRememberedDirectoryDb();
+    if (!db) return null;
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const close = () => {
+        if (typeof db.close === 'function') db.close();
+      };
+      const settle = (fn, value) => {
+        if (settled) return;
+        settled = true;
+        close();
+        fn(value);
+      };
+      const tx = db.transaction(REMEMBERED_DIRECTORY_STORE, mode);
+      tx.onerror = () => settle(reject, tx.error || new Error('Remembered folder transaction failed.'));
+      tx.onabort = () => settle(reject, tx.error || new Error('Remembered folder transaction was aborted.'));
+      const request = operation(tx.objectStore(REMEMBERED_DIRECTORY_STORE));
+      request.onsuccess = (event) => settle(resolve, event.target.result);
+      request.onerror = () => settle(reject, request.error || new Error('Remembered folder request failed.'));
+    });
+  }
+
+  async function rememberDirectory(directoryHandle) {
+    if (!directoryHandle || !supportsRememberedDirectory()) return false;
+    await withRememberedDirectoryStore('readwrite', (store) => store.put({
+      id: REMEMBERED_DIRECTORY_KEY,
+      name: directoryHandle.name || '',
+      handle: directoryHandle,
+      updatedAt: nowIso(),
+    }));
+    return true;
+  }
+
+  async function loadRememberedDirectory() {
+    if (!supportsRememberedDirectory()) return null;
+    const record = await withRememberedDirectoryStore('readonly', (store) => store.get(REMEMBERED_DIRECTORY_KEY));
+    return record?.handle || null;
+  }
+
+  async function forgetRememberedDirectory() {
+    if (!supportsRememberedDirectory()) return false;
+    await withRememberedDirectoryStore('readwrite', (store) => store.delete(REMEMBERED_DIRECTORY_KEY));
+    return true;
+  }
+
+  async function queryPermission(directoryHandle) {
+    if (!directoryHandle?.queryPermission) return 'granted';
     const opts = { mode: 'readwrite' };
-    if (await directoryHandle.queryPermission(opts) === 'granted') return true;
+    return await directoryHandle.queryPermission(opts);
+  }
+
+  async function ensurePermission(directoryHandle) {
+    const opts = { mode: 'readwrite' };
+    if (await queryPermission(directoryHandle) === 'granted') return true;
+    if (!directoryHandle?.requestPermission) return false;
     return await directoryHandle.requestPermission(opts) === 'granted';
   }
 
@@ -1101,6 +1251,7 @@
   const GardenSchema = {
     SCHEMA_VERSION,
     FILES,
+    FILE_ORDER,
     FIELD_TYPES,
     DEFAULT_TOPICS,
     createInitialData,
@@ -1116,6 +1267,7 @@
     normalizeLibraryFile,
     validatePlantsFile,
     mergePlanEntryValues,
+    storageFileNames: () => FILE_ORDER.map((key) => FILES[key]),
     safeId,
     todayKey,
     fmtDate,
@@ -1127,6 +1279,7 @@
     derive,
     getActivePlants,
     getActiveFields,
+    missingRequiredFields,
     isFilled,
     isPlantDone,
     plantEntryXp,
@@ -1135,8 +1288,13 @@
 
   const GardenStore = {
     supportsFileSystemAccess: () => typeof window.showDirectoryPicker === 'function',
+    supportsRememberedDirectory,
     pickDirectory,
+    queryPermission,
     ensurePermission,
+    rememberDirectory,
+    loadRememberedDirectory,
+    forgetRememberedDirectory,
     loadFromDirectory,
     saveFile,
     saveAll,

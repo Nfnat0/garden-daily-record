@@ -3,10 +3,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function loadDataModule() {
+function loadDataModule(windowOverrides = {}) {
   const source = fs.readFileSync(path.join(__dirname, 'data.jsx'), 'utf8');
   const context = {
-    window: {},
+    window: { ...windowOverrides },
     console,
     Date,
     JSON,
@@ -19,6 +19,8 @@ function loadDataModule() {
     Set,
     Map,
     Promise,
+    setTimeout,
+    clearTimeout,
   };
   vm.createContext(context);
   vm.runInContext(source, context, { filename: 'data.jsx' });
@@ -52,6 +54,7 @@ class MemoryFileHandle {
 class MemoryDirectoryHandle {
   constructor(files = {}) {
     this.files = { ...files };
+    this.name = 'memory-garden';
   }
 
   async getFileHandle(name, opts = {}) {
@@ -65,6 +68,69 @@ class MemoryDirectoryHandle {
     }
     return new MemoryFileHandle(this, name);
   }
+}
+
+function asyncRequest(result, tx = null) {
+  const request = { result: undefined, error: null, onsuccess: null, onerror: null };
+  setTimeout(() => {
+    request.result = result;
+    if (request.onsuccess) request.onsuccess({ target: request });
+    if (tx?.oncomplete) {
+      setTimeout(() => tx.oncomplete({ target: tx }), 0);
+    }
+  }, 0);
+  return request;
+}
+
+function createFakeIndexedDB() {
+  const databases = new Map();
+  return {
+    open(name) {
+      const request = { result: null, error: null, onupgradeneeded: null, onsuccess: null, onerror: null };
+      setTimeout(() => {
+        let db = databases.get(name);
+        const isNew = !db;
+        if (!db) {
+          const stores = new Map();
+          db = {
+            objectStoreNames: {
+              contains: (storeName) => stores.has(storeName),
+            },
+            createObjectStore: (storeName) => {
+              if (!stores.has(storeName)) stores.set(storeName, new Map());
+            },
+            transaction: (storeName) => {
+              const store = stores.get(storeName);
+              const tx = {
+                oncomplete: null,
+                onerror: null,
+                onabort: null,
+                error: null,
+                objectStore: () => ({
+                  put: (record) => {
+                    store.set(record.id, record);
+                    return asyncRequest(record.id, tx);
+                  },
+                  get: (key) => asyncRequest(store.get(key), tx),
+                  delete: (key) => {
+                    store.delete(key);
+                    return asyncRequest(undefined, tx);
+                  },
+                }),
+              };
+              return tx;
+            },
+            close: () => {},
+          };
+          databases.set(name, db);
+        }
+        request.result = db;
+        if (isNew && request.onupgradeneeded) request.onupgradeneeded({ target: request });
+        if (request.onsuccess) request.onsuccess({ target: request });
+      }, 0);
+      return request;
+    },
+  };
 }
 
 async function testCreatesDefaultFiles() {
@@ -196,8 +262,22 @@ function testI18nHasRequiredJapaneseAndEnglishKeys() {
     'nav.plan',
     'nav.today',
     'storage.connectTitle',
+    'storage.localFirstTitle',
+    'storage.rememberedTitle',
+    'storage.rememberedBody',
+    'storage.restoreFolder',
+    'storage.restoring',
+    'storage.forgetFolder',
+    'storage.restoreFailed',
+    'storage.rememberFailed',
+    'storage.previewTitle',
+    'storage.filesTitle',
+    'storage.connectedHelp',
     'plan.title',
     'today.title',
+    'today.changed',
+    'today.missingRequired',
+    'today.missingRequiredList',
     'settings.title',
     'actions.save',
     'plants.plan',
@@ -209,6 +289,74 @@ function testI18nHasRequiredJapaneseAndEnglishKeys() {
     assert.notEqual(GardenI18n.t('en', key), key);
   });
   assert.equal(GardenI18n.LANGUAGE_STORAGE_KEY, 'garden.language');
+}
+
+async function testRemembersDirectoryHandleInIndexedDb() {
+  const dir = new MemoryDirectoryHandle();
+  dir.name = 'Garden QA';
+  const { GardenStore } = loadDataModule({ indexedDB: createFakeIndexedDB() });
+
+  assert.equal(GardenStore.supportsRememberedDirectory(), true);
+  assert.equal(await GardenStore.loadRememberedDirectory(), null);
+  assert.equal(await GardenStore.rememberDirectory(dir), true);
+
+  const loaded = await GardenStore.loadRememberedDirectory();
+  assert.equal(loaded, dir);
+  assert.equal(loaded.name, 'Garden QA');
+
+  assert.equal(await GardenStore.forgetRememberedDirectory(), true);
+  assert.equal(await GardenStore.loadRememberedDirectory(), null);
+}
+
+async function testSkipsRememberedDirectoryWhenIndexedDbUnavailable() {
+  const { GardenStore } = loadDataModule();
+
+  assert.equal(GardenStore.supportsRememberedDirectory(), false);
+  assert.equal(await GardenStore.rememberDirectory(new MemoryDirectoryHandle()), false);
+  assert.equal(await GardenStore.loadRememberedDirectory(), null);
+  assert.equal(await GardenStore.forgetRememberedDirectory(), false);
+}
+
+async function testSeparatesPermissionQueryFromRequest() {
+  const { GardenStore } = loadDataModule();
+  const calls = [];
+  const handle = {
+    queryPermission: async (opts) => {
+      calls.push(['query', opts.mode]);
+      return 'prompt';
+    },
+    requestPermission: async (opts) => {
+      calls.push(['request', opts.mode]);
+      return 'granted';
+    },
+  };
+
+  assert.equal(await GardenStore.queryPermission(handle), 'prompt');
+  assert.deepEqual(calls, [['query', 'readwrite']]);
+  assert.equal(await GardenStore.ensurePermission(handle), true);
+  assert.deepEqual(calls, [['query', 'readwrite'], ['query', 'readwrite'], ['request', 'readwrite']]);
+}
+
+function testExposesStorageFileNamesForUserFacingCopy() {
+  const { GardenSchema } = loadDataModule();
+
+  assert.deepEqual(Array.from(GardenSchema.storageFileNames()), [
+    'garden.settings.json',
+    'garden.plants.json',
+    'garden.entries.json',
+    'garden.library.json',
+  ]);
+}
+
+function testReportsMissingRequiredFieldsForDailyProgress() {
+  const { GardenSchema, GardenCalc } = loadDataModule();
+  const plant = GardenSchema.createDefaultPlants().find((item) => item.id === 'mind');
+
+  const missing = GardenCalc.missingRequiredFields(plant, { study_minutes: 45 });
+  const complete = GardenCalc.missingRequiredFields(plant, { study_minutes: 45, study_topic: 'go' });
+
+  assert.deepEqual(Array.from(missing.map((field) => field.id)), ['study_topic']);
+  assert.equal(complete.length, 0);
 }
 
 function testAvoidanceCountAwardsMoreXpWhenCloserToZero() {
@@ -311,6 +459,11 @@ async function run() {
   testDeriveSeparatesPlanFromCareProgress();
   testMergesPlanEntryWithoutDroppingCareValues();
   testI18nHasRequiredJapaneseAndEnglishKeys();
+  await testRemembersDirectoryHandleInIndexedDb();
+  await testSkipsRememberedDirectoryWhenIndexedDbUnavailable();
+  await testSeparatesPermissionQueryFromRequest();
+  testExposesStorageFileNamesForUserFacingCopy();
+  testReportsMissingRequiredFieldsForDailyProgress();
   testAvoidanceCountAwardsMoreXpWhenCloserToZero();
   await testReportsBrokenJson();
   await testReportsUnsupportedSchemaVersion();

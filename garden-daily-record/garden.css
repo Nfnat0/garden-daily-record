@@ -168,6 +168,7 @@ body {
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: 20px;
+  min-width: 0;
 }
 .card-flat {
   background: var(--bg-warm);
@@ -198,6 +199,13 @@ body {
   transition: all .15s;
 }
 .btn:hover { background: var(--bg-warm); border-color: var(--ink-faint); }
+.btn:focus-visible,
+.nav-item:focus-visible,
+.seg-btn:focus-visible,
+.input:focus-visible {
+  outline: 2px solid var(--leaf-500);
+  outline-offset: 2px;
+}
 .btn-primary {
   background: var(--leaf-700);
   color: var(--bg);
@@ -289,8 +297,8 @@ textarea.input { resize: vertical; min-height: 72px; line-height: 1.5; }
 .divider-soft { height: 1px; background: var(--line-soft); }
 
 /* ── Utility ──────────────────────────────────────────── */
-.row { display: flex; }
-.col { display: flex; flex-direction: column; }
+.row { display: flex; min-width: 0; }
+.col { display: flex; flex-direction: column; min-width: 0; }
 .gap-2 { gap: 8px; }
 .gap-3 { gap: 12px; }
 .gap-4 { gap: 16px; }

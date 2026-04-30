@@ -3,24 +3,50 @@
 
 const { useEffect: useEffectT, useMemo: useMemoT, useState: useStateT } = React;
 
-function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, storageBusy, language, t }) {
+function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, onNav, storageBusy, language, t }) {
   const plants = useMemoT(() => summary.plants.filter((plant) => plant.id !== 'plan'), [summary.plants]);
   const entry = data.entries.entries[selectedDate] || { values: {} };
   const [draft, setDraft] = useStateT(() => cloneEntryValues(entry.values));
   const [savedAt, setSavedAt] = useStateT('');
   const [error, setError] = useStateT('');
+  const savedValues = useMemoT(() => cloneEntryValues(entry.values), [entry.values]);
 
   useEffectT(() => {
     setDraft(cloneEntryValues((data.entries.entries[selectedDate] || { values: {} }).values));
-    setSavedAt('');
     setError('');
   }, [data.entries, selectedDate]);
+
+  useEffectT(() => {
+    setSavedAt('');
+    setError('');
+  }, [selectedDate]);
 
   const done = plants.filter((plant) => GardenCalc.isPlantDone(plant, draft[plant.id])).length;
   const pct = plants.length ? Math.round((done / plants.length) * 100) : 0;
   const dateObj = parseLocalDateT(selectedDate);
+  const missingRequired = plants.flatMap((plant) => (
+    GardenCalc.missingRequiredFields(plant, draft[plant.id]).map((field) => ({ plant, field }))
+  ));
+  const missingLabels = missingRequired.slice(0, 3).map(({ plant, field }) => (
+    `${GardenI18n.displayPlantName(plant, language)}: ${GardenI18n.displayFieldLabel(field, language)}`
+  ));
+  if (missingRequired.length > missingLabels.length) {
+    missingLabels.push(t('today.moreMissing', { count: missingRequired.length - missingLabels.length }));
+  }
+  const isDirty = serializeEntryValues(draft) !== serializeEntryValues(savedValues);
+  const hasSavedEntry = Boolean(data.entries.entries[selectedDate]);
+  const statusText = error
+    ? error
+    : savedAt && !isDirty
+      ? t('today.saved', { time: savedAt })
+      : isDirty
+        ? t('today.changed')
+        : hasSavedEntry
+          ? t('actions.saved')
+          : t('today.unsaved');
 
   const updateField = (plantId, fieldId, value) => {
+    setSavedAt('');
     setDraft((prev) => ({
       ...prev,
       [plantId]: {
@@ -42,7 +68,7 @@ function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, s
   };
 
   return (
-    <div className="col gap-4" style={{ padding: '32px 40px 80px', maxWidth: 760, margin: '0 auto' }}>
+    <div className="col gap-4" style={{ padding: '32px clamp(16px, 4vw, 40px) 80px', maxWidth: 760, margin: '0 auto' }}>
       <div className="col gap-2">
         <div className="t-eyebrow">{t('today.eyebrow', { date: selectedDate, day: summary.dayName(dateObj) })}</div>
         <div className="row justify-between items-end gap-3" style={{ flexWrap: 'wrap' }}>
@@ -53,6 +79,49 @@ function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, s
         <div className="t-body">{t('today.progress', { total: plants.length, done })}</div>
         <div className="bar-track" style={{ marginTop: 4 }}>
           <div className="bar-fill" style={{ width: `${pct}%` }}></div>
+        </div>
+      </div>
+
+      <div className="notice row justify-between items-center gap-3" style={{ flexWrap: 'wrap' }}>
+        <div className="t-body" style={{ flex: '1 1 260px' }}>
+          {summary.plan?.state === 'done'
+            ? t('today.planDone', { plan: summary.plan.value })
+            : t('today.planEmpty')}
+        </div>
+        <button className="btn btn-ghost" onClick={() => onNav && onNav('plan')}>{t('today.editPlan')}</button>
+      </div>
+
+      <div className="card row items-center justify-between gap-3" style={{
+        position: 'sticky',
+        top: 64,
+        zIndex: 5,
+        padding: 14,
+        flexWrap: 'wrap',
+        boxShadow: 'var(--shadow-md)',
+      }}>
+        <div className="col gap-2" style={{ flex: '1 1 240px', minWidth: 0 }}>
+          <div className="row items-center gap-2" style={{ flexWrap: 'wrap' }}>
+            <span className={`chip ${missingRequired.length === 0 ? 'chip-leaf' : 'chip-pollen'}`}>
+              {missingRequired.length === 0
+                ? t('today.completeReady')
+                : t('today.missingRequired', { count: missingRequired.length })}
+            </span>
+            <span className="t-tiny" style={{ color: error ? 'var(--bloom)' : 'var(--ink-soft)' }}>{statusText}</span>
+          </div>
+          {missingLabels.length > 0 && (
+            <div className="t-tiny" style={{ color: 'var(--ink-soft)' }}>
+              {t('today.missingRequiredList', { items: missingLabels.join('、') })}
+            </div>
+          )}
+          <div className="bar-track">
+            <div className="bar-fill" style={{ width: `${pct}%` }}></div>
+          </div>
+        </div>
+        <div className="row gap-2" style={{ flexWrap: 'wrap' }}>
+          <button className="btn" onClick={() => { setDraft(cloneEntryValues(entry.values)); setSavedAt(''); }}>{t('today.reset')}</button>
+          <button className="btn btn-primary" disabled={storageBusy || !isDirty} onClick={save}>
+            {storageBusy ? t('today.saving') : t('today.save')}
+          </button>
         </div>
       </div>
 
@@ -79,19 +148,6 @@ function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, s
         </FieldCard>
       ))}
 
-      <div className="row items-center justify-between" style={{ marginTop: 8, gap: 12, flexWrap: 'wrap' }}>
-        <div className="t-tiny">
-          {error && <span style={{ color: 'var(--bloom)' }}>{error}</span>}
-          {!error && savedAt && <>{t('today.saved', { time: savedAt })}</>}
-          {!error && !savedAt && <>{t('today.unsaved')}</>}
-        </div>
-        <div className="row gap-2">
-          <button className="btn" onClick={() => setDraft(cloneEntryValues(entry.values))}>{t('today.reset')}</button>
-          <button className="btn btn-primary btn-lg" disabled={storageBusy} onClick={save}>
-            {storageBusy ? t('today.saving') : t('today.save')}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -195,6 +251,17 @@ function DynamicField({ field, value, onChange, language, t }) {
 
 function cloneEntryValues(values) {
   return JSON.parse(JSON.stringify(values || {}));
+}
+
+function serializeEntryValues(values) {
+  const stable = (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    return Object.keys(value).sort().reduce((acc, key) => {
+      acc[key] = stable(value[key]);
+      return acc;
+    }, {});
+  };
+  return JSON.stringify(stable(values || {}));
 }
 
 function parseLocalDateT(dateKey) {

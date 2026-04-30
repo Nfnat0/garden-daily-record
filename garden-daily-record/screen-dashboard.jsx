@@ -7,13 +7,25 @@ function DashboardScreen({ summary, onNav, language, t }) {
   const sleepAvg = sleepValues.length
     ? Math.round((sleepValues.reduce((s, d) => s + d, 0) / sleepValues.length) * 10) / 10
     : 0;
+  const nextAction = summary.plan && summary.plan.state !== 'done'
+    ? { route: 'plan', label: t('dashboard.goPlan'), body: t('dashboard.planPrompt') }
+    : summary.today.careDone < summary.today.careTotal
+      ? { route: 'today', label: t('dashboard.goToday'), body: t('dashboard.todayPrompt') }
+      : { route: 'today', label: t('dashboard.goToday'), body: t('dashboard.donePrompt') };
 
   return (
-    <div className="col gap-4" style={{ padding: '32px 40px 80px', maxWidth: 1100, margin: '0 auto' }}>
+    <div className="col gap-4" style={{ padding: '32px clamp(16px, 4vw, 40px) 80px', maxWidth: 1100, margin: '0 auto' }}>
       <div className="row items-end justify-between" style={{ flexWrap: 'wrap', gap: 16 }}>
         <div className="col gap-2">
           <div className="t-eyebrow">{t('dashboard.eyebrow', { day: summary.dayNum })}</div>
           <h1 className="t-display" style={{ margin: 0 }}>{t('dashboard.title', { count: summary.plants.length })}</h1>
+          <div className="notice row items-center gap-3" style={{ flexWrap: 'wrap', marginTop: 8 }}>
+            <div style={{ flex: '1 1 240px', minWidth: 0 }}>
+              <div className="t-eyebrow">{t('dashboard.nextAction')}</div>
+              <div className="t-body">{nextAction.body}</div>
+            </div>
+            <button className="btn btn-primary" onClick={() => onNav && onNav(nextAction.route)}>{nextAction.label}</button>
+          </div>
         </div>
         <div className="col gap-2 items-end">
           <div className="t-eyebrow">{t('dashboard.level', { level: summary.level.level })}</div>
@@ -64,7 +76,7 @@ function StatCard({ icon, label, value, unit, sub, accent }) {
 
 function TodaySnapshot({ summary, onNav, language, t }) {
   return (
-    <div className="card" style={{ flex: 1, minWidth: 320, padding: 22 }}>
+    <div className="card" style={{ flex: '1 1 320px', minWidth: 0, maxWidth: '100%', padding: 22 }}>
       <div className="row justify-between items-center" style={{ marginBottom: 14 }}>
         <div>
           <div className="t-eyebrow">{t('dashboard.today')}</div>
@@ -97,7 +109,7 @@ function WeekChart({ summary, t }) {
   const days = summary.entries.slice(-28);
   const max = Math.max(...days.map(d => d.study || 0), 60);
   return (
-    <div className="card" style={{ flex: 1.4, minWidth: 360, padding: 22 }}>
+    <div className="card" style={{ flex: '1.4 1 320px', minWidth: 0, maxWidth: '100%', padding: 22 }}>
       <div className="row justify-between items-center" style={{ marginBottom: 4 }}>
         <div className="t-eyebrow">{t('dashboard.studyWeeks')}</div>
         <div className="t-tiny mono">{t('dashboard.perDay')}</div>

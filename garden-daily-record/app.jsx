@@ -1,7 +1,7 @@
 /* global React, ReactDOM, useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakToggle, GardenSchema, GardenStore, GardenCalc, GardenI18n, DashboardScreen, PlanScreen, TodayScreen, StudyScreen, LibraryScreen, SettingsScreen, window, document */
 // Main Garden app shell.
 
-const { useEffect: useEffectA, useMemo: useMemoA, useState: useStateA } = React;
+const { useEffect: useEffectA, useMemo: useMemoA, useRef: useRefA, useState: useStateA } = React;
 
 const TWEAK_DEFAULTS = window.GARDEN_TWEAK_DEFAULTS || {
   theme: 'dark',
@@ -32,7 +32,20 @@ function readStoredLanguage() {
   }
 }
 
-function StorageGate({ supported, busy, error, onConnect, t }) {
+function StorageGate({
+  supported,
+  busy,
+  error,
+  fileNames,
+  summary,
+  rememberedName,
+  restoreBusy,
+  onConnect,
+  onRestore,
+  onForgetRemembered,
+  onPreview,
+  t,
+}) {
   return (
     <div className="storage-card card col gap-4">
       <div className="col gap-2">
@@ -40,7 +53,72 @@ function StorageGate({ supported, busy, error, onConnect, t }) {
         <h1 className="t-hero" style={{ margin: 0 }}>{t('storage.connectTitle')}</h1>
         <div className="t-body">{t('storage.connectBody')}</div>
       </div>
-      {!supported && <div className="notice t-body">{t('storage.unsupported')}</div>}
+
+      <div className="notice col gap-2">
+        <div className="t-body-strong">{t('storage.localFirstTitle')}</div>
+        <div className="t-body">{t('storage.localFirstBody')}</div>
+      </div>
+
+      {supported && rememberedName && (
+        <div className="notice col gap-3">
+          <div>
+            <div className="t-body-strong">{t('storage.rememberedTitle')}</div>
+            <div className="t-body" style={{ marginTop: 4 }}>
+              {t('storage.rememberedBody', { name: rememberedName })}
+            </div>
+          </div>
+          <div className="row gap-2" style={{ flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" disabled={busy || restoreBusy} onClick={onRestore}>
+              {restoreBusy ? t('storage.restoring') : t('storage.restoreFolder')}
+            </button>
+            <button className="btn btn-ghost" disabled={busy || restoreBusy} onClick={onForgetRemembered}>
+              {t('storage.forgetFolder')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="row gap-3" style={{ flexWrap: 'wrap' }}>
+        <div className="card-sunk col gap-2" style={{ flex: '1 1 220px', padding: 16, minWidth: 0 }}>
+          <div className="t-eyebrow">{t('storage.filesTitle')}</div>
+          <div className="col gap-2">
+            {fileNames.map((name) => (
+              <div key={name} className="row items-center gap-2" style={{ minWidth: 0 }}>
+                <span className="chip chip-leaf" style={{ flex: 'none' }}>JSON</span>
+                <span className="t-tiny mono" style={{ overflowWrap: 'anywhere' }}>{name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="card-sunk col gap-2" style={{ flex: '1 1 220px', padding: 16, minWidth: 0 }}>
+          <div className="t-eyebrow">{t('storage.setupTitle')}</div>
+          {[t('storage.setupStep1'), t('storage.setupStep2'), t('storage.setupStep3')].map((step, i) => (
+            <div key={step} className="row gap-2">
+              <span className="chip">{i + 1}</span>
+              <span className="t-body">{step}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card-sunk col gap-3" style={{ padding: 16 }}>
+        <div>
+          <div className="t-eyebrow">{t('storage.previewTitle')}</div>
+          <div className="t-body" style={{ marginTop: 4 }}>{t('storage.previewBody')}</div>
+        </div>
+        <div className="row gap-2" style={{ flexWrap: 'wrap' }}>
+          <span className="chip chip-leaf">{t('dashboard.todayCare')}: {summary.today.careTotal}</span>
+          <span className="chip">{t('dashboard.badges')}: {summary.plants.length}</span>
+        </div>
+        <button className="btn" disabled={busy} onClick={onPreview} style={{ alignSelf: 'flex-start' }}>{t('storage.previewButton')}</button>
+      </div>
+
+      {!supported && (
+        <div className="notice col gap-2">
+          <div className="t-body-strong">{t('storage.unsupportedTitle')}</div>
+          <div className="t-body">{t('storage.unsupportedAction')}</div>
+        </div>
+      )}
       {error && <div className="notice t-body" style={{ color: 'var(--bloom)' }}>{error}</div>}
       <button className="btn btn-primary btn-lg" disabled={!supported || busy} onClick={onConnect} style={{ alignSelf: 'flex-start' }}>
         {busy ? t('storage.connecting') : t('storage.pickFolder')}
@@ -49,17 +127,24 @@ function StorageGate({ supported, busy, error, onConnect, t }) {
   );
 }
 
-function StorageBar({ connectedName, busy, warnings, savedAt, error, onConnect, onReload, t }) {
+function StorageBar({ connectedName, busy, warnings, savedAt, error, previewMode, onConnect, onReload, t }) {
   return (
     <div className="storage-bar">
-      <div className="row items-center gap-2" style={{ minWidth: 0, flexWrap: 'wrap' }}>
-        <span className="chip chip-leaf">{connectedName || t('storage.unconnected')}</span>
-        {savedAt && <span className="t-tiny mono">{t('storage.saved', { time: savedAt })}</span>}
+      <div className="col gap-2" style={{ minWidth: 0 }}>
+        <div className="row items-center gap-2" style={{ minWidth: 0, flexWrap: 'wrap' }}>
+          <span className="chip chip-leaf">{connectedName || t('storage.unconnected')}</span>
+          {savedAt && <span className="t-tiny mono">{previewMode ? savedAt : t('storage.saved', { time: savedAt })}</span>}
+        </div>
+        <div className="t-tiny">
+          {previewMode
+            ? t('storage.previewHelp')
+            : t('storage.connectedHelp', { name: connectedName || t('storage.unconnected') })}
+        </div>
         {warnings.length > 0 && <span className="chip chip-bloom">{t('storage.warnings', { count: warnings.length })}</span>}
         {error && <span className="t-tiny" style={{ color: 'var(--bloom)' }}>{error}</span>}
       </div>
       <div className="row gap-2">
-        <button className="btn btn-ghost" disabled={busy} onClick={onReload}>{t('storage.reload')}</button>
+        {!previewMode && <button className="btn btn-ghost" disabled={busy} onClick={onReload}>{t('storage.reload')}</button>}
         <button className="btn" disabled={busy} onClick={onConnect}>{t('storage.changeFolder')}</button>
       </div>
     </div>
@@ -87,6 +172,10 @@ function App() {
   const [route, setRoute] = useStateA('dashboard');
   const [tweaksOpen, setTweaksOpen] = useStateA(false);
   const [directoryHandle, setDirectoryHandle] = useStateA(null);
+  const [previewMode, setPreviewMode] = useStateA(false);
+  const [rememberedHandle, setRememberedHandle] = useStateA(null);
+  const [rememberedName, setRememberedName] = useStateA('');
+  const [restoreBusy, setRestoreBusy] = useStateA(false);
   const [connectedName, setConnectedName] = useStateA('');
   const [gardenData, setGardenData] = useStateA(() => GardenSchema.createInitialData());
   const [selectedDate, setSelectedDate] = useStateA(() => GardenSchema.todayKey());
@@ -94,6 +183,7 @@ function App() {
   const [storageError, setStorageError] = useStateA('');
   const [storageBusy, setStorageBusy] = useStateA(false);
   const [savedAt, setSavedAt] = useStateA('');
+  const storageOperationRef = useRefA(0);
   const storageSupported = GardenStore.supportsFileSystemAccess();
   const summary = useMemoA(() => GardenCalc.derive(gardenData, selectedDate), [gardenData, selectedDate]);
   const t = useMemoA(() => (key, params) => GardenI18n.t(language, key, params), [language]);
@@ -111,6 +201,56 @@ function App() {
     }
   }, [language]);
 
+  const folderName = (handle) => handle?.name || 'garden folder';
+
+  const finishDirectoryConnection = (handle, result, savedLabel = '') => {
+    setDirectoryHandle(handle);
+    setPreviewMode(false);
+    setConnectedName(folderName(handle));
+    setGardenData(result.data);
+    setWarnings(result.warnings || []);
+    setSavedAt(savedLabel);
+    setRememberedHandle(handle);
+    setRememberedName(folderName(handle));
+  };
+
+  useEffectA(() => {
+    if (!storageSupported || !GardenStore.supportsRememberedDirectory()) return undefined;
+    let cancelled = false;
+    const operationId = ++storageOperationRef.current;
+
+    const restoreIfAlreadyAllowed = async () => {
+      setRestoreBusy(true);
+      try {
+        const handle = await GardenStore.loadRememberedDirectory();
+        if (cancelled || operationId !== storageOperationRef.current || !handle) return;
+        setRememberedHandle(handle);
+        setRememberedName(folderName(handle));
+        const permission = await GardenStore.queryPermission(handle);
+        if (cancelled || operationId !== storageOperationRef.current) return;
+        if (permission !== 'granted') return;
+        setStorageBusy(true);
+        const result = await GardenStore.loadFromDirectory(handle);
+        if (cancelled || operationId !== storageOperationRef.current) return;
+        finishDirectoryConnection(handle, result, result.created?.length ? t('storage.initialized') : '');
+      } catch (err) {
+        if (!cancelled && operationId === storageOperationRef.current) {
+          setStorageError(t('storage.restoreFailed'));
+        }
+      } finally {
+        if (!cancelled && operationId === storageOperationRef.current) {
+          setRestoreBusy(false);
+          setStorageBusy(false);
+        }
+      }
+    };
+
+    restoreIfAlreadyAllowed();
+    return () => {
+      cancelled = true;
+    };
+  }, [storageSupported]);
+
   useEffectA(() => {
     const onMsg = (event) => {
       if (event.data?.type === '__activate_edit_mode') setTweaksOpen(true);
@@ -126,20 +266,74 @@ function App() {
   };
 
   const connectFolder = async () => {
+    const operationId = ++storageOperationRef.current;
     setStorageBusy(true);
+    setRestoreBusy(false);
     setStorageError('');
     try {
       const handle = await GardenStore.pickDirectory();
       const result = await GardenStore.loadFromDirectory(handle);
-      setDirectoryHandle(handle);
-      setConnectedName(handle.name || 'garden folder');
-      setGardenData(result.data);
-      setWarnings(result.warnings || []);
-      setSavedAt(result.created?.length ? t('storage.initialized') : '');
+      if (operationId !== storageOperationRef.current) return;
+      finishDirectoryConnection(handle, result, result.created?.length ? t('storage.initialized') : '');
+      try {
+        await GardenStore.rememberDirectory(handle);
+      } catch (rememberErr) {
+        if (operationId === storageOperationRef.current) setStorageError(t('storage.rememberFailed'));
+      }
     } catch (err) {
-      if (err?.name !== 'AbortError') setStorageError(err?.message || String(err));
+      if (operationId === storageOperationRef.current && err?.name !== 'AbortError') setStorageError(err?.message || String(err));
     } finally {
-      setStorageBusy(false);
+      if (operationId === storageOperationRef.current) setStorageBusy(false);
+    }
+  };
+
+  const restoreRememberedFolder = async () => {
+    if (!rememberedHandle) return;
+    const operationId = ++storageOperationRef.current;
+    setStorageBusy(true);
+    setRestoreBusy(true);
+    setStorageError('');
+    try {
+      if (!await GardenStore.ensurePermission(rememberedHandle)) {
+        throw new Error(t('storage.restoreFailed'));
+      }
+      const result = await GardenStore.loadFromDirectory(rememberedHandle);
+      if (operationId !== storageOperationRef.current) return;
+      finishDirectoryConnection(rememberedHandle, result, result.created?.length ? t('storage.initialized') : '');
+      try {
+        await GardenStore.rememberDirectory(rememberedHandle);
+      } catch (rememberErr) {
+        if (operationId === storageOperationRef.current) setStorageError(t('storage.rememberFailed'));
+      }
+    } catch (err) {
+      if (operationId === storageOperationRef.current && err?.name !== 'AbortError') {
+        setStorageError(err?.message || t('storage.restoreFailed'));
+      }
+    } finally {
+      if (operationId === storageOperationRef.current) {
+        setStorageBusy(false);
+        setRestoreBusy(false);
+      }
+    }
+  };
+
+  const forgetRememberedFolder = async () => {
+    const operationId = ++storageOperationRef.current;
+    setStorageBusy(true);
+    setRestoreBusy(true);
+    setStorageError('');
+    try {
+      await GardenStore.forgetRememberedDirectory();
+      if (operationId !== storageOperationRef.current) return;
+      setRememberedHandle(null);
+      setRememberedName('');
+    } catch (err) {
+      if (operationId === storageOperationRef.current) setStorageError(err?.message || String(err));
+    } finally {
+      if (operationId === storageOperationRef.current) {
+        setStorageBusy(false);
+        setRestoreBusy(false);
+      }
     }
   };
 
@@ -159,11 +353,16 @@ function App() {
   };
 
   const saveFile = async (key, nextFile) => {
-    if (!directoryHandle) throw new Error('Save folder is not connected.');
+    if (!directoryHandle && !previewMode) throw new Error('Save folder is not connected.');
     setStorageBusy(true);
     setStorageError('');
     try {
       const normalized = GardenSchema.normalizeData({ ...gardenData, [key]: nextFile });
+      if (previewMode) {
+        setGardenData(normalized);
+        setSavedAt(t('storage.previewSaved'));
+        return normalized;
+      }
       const saved = await GardenStore.saveFile(directoryHandle, key, normalized[key]);
       const nextData = GardenSchema.normalizeData({ ...gardenData, [key]: saved });
       setGardenData(nextData);
@@ -191,12 +390,23 @@ function App() {
   const savePlants = async (plantsFile) => saveFile('plants', plantsFile);
   const saveLibrary = async (libraryFile) => saveFile('library', libraryFile);
   const saveSettings = async (settingsFile) => saveFile('settings', settingsFile);
+  const startPreview = () => {
+    storageOperationRef.current += 1;
+    setStorageError('');
+    setWarnings([]);
+    setStorageBusy(false);
+    setRestoreBusy(false);
+    setDirectoryHandle(null);
+    setPreviewMode(true);
+    setConnectedName(t('storage.previewName'));
+    setRoute('dashboard');
+  };
 
   const sharedProps = { language, t };
   const screens = {
     dashboard: <DashboardScreen tweaks={tweaks} data={gardenData} summary={summary} onNav={setRoute} {...sharedProps} />,
     plan: <PlanScreen data={gardenData} summary={summary} selectedDate={selectedDate} onDateChange={setSelectedDate} onSaveEntry={saveEntry} storageBusy={storageBusy} {...sharedProps} />,
-    today: <TodayScreen tweaks={tweaks} data={gardenData} summary={summary} selectedDate={selectedDate} onDateChange={setSelectedDate} onSaveEntry={saveEntry} storageBusy={storageBusy} {...sharedProps} />,
+    today: <TodayScreen tweaks={tweaks} data={gardenData} summary={summary} selectedDate={selectedDate} onDateChange={setSelectedDate} onSaveEntry={saveEntry} onNav={setRoute} storageBusy={storageBusy} {...sharedProps} />,
     study: <StudyScreen data={gardenData} summary={summary} {...sharedProps} />,
     library: <LibraryScreen data={gardenData} summary={summary} onSaveLibrary={saveLibrary} storageBusy={storageBusy} {...sharedProps} />,
     settings: <SettingsScreen data={gardenData} summary={summary} onSavePlants={savePlants} onSaveSettings={saveSettings} storageBusy={storageBusy} warnings={warnings} {...sharedProps} />,
@@ -234,21 +444,37 @@ function App() {
       </nav>
 
       <main className="main" data-screen-label={route}>
-        {directoryHandle && (
+        {(directoryHandle || previewMode) && (
           <StorageBar
-            connectedName={connectedName}
+            connectedName={previewMode ? t('storage.previewName') : connectedName}
             busy={storageBusy}
             warnings={warnings}
             savedAt={savedAt}
             error={storageError}
+            previewMode={previewMode}
             onConnect={connectFolder}
             onReload={reloadFolder}
             t={t}
           />
         )}
-        {directoryHandle
+        {directoryHandle || previewMode
           ? screens[route]
-          : <StorageGate supported={storageSupported} busy={storageBusy} error={storageError} onConnect={connectFolder} t={t} />}
+          : (
+            <StorageGate
+              supported={storageSupported}
+              busy={storageBusy}
+              error={storageError}
+              fileNames={GardenSchema.storageFileNames()}
+              summary={summary}
+              rememberedName={rememberedName}
+              restoreBusy={restoreBusy}
+              onConnect={connectFolder}
+              onRestore={restoreRememberedFolder}
+              onForgetRemembered={forgetRememberedFolder}
+              onPreview={startPreview}
+              t={t}
+            />
+          )}
       </main>
 
       {tweaksOpen && (

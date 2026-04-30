@@ -72,7 +72,7 @@ node tools/build-garden-bundle.cjs
 
 観測された既知課題:
 
-- 接続後の390pxモバイルviewportで `document.body.scrollWidth` が400、`window.innerWidth` が390でした。原因はStudyチャートカードの最小幅です。
+- ベースラインでは接続後の390pxモバイルviewportで `document.body.scrollWidth` が400、`window.innerWidth` が390でした。実装パス1でDashboard/Studyの横overflowは解消済みです。再発防止として、UI変更時は390px viewportの `document.body.scrollWidth <= window.innerWidth` を確認してください。
 
 レビュー時のスクリーンショットは `output/playwright/` に生成されます。このフォルダは `.gitignore` 対象です。
 

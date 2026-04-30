@@ -538,6 +538,11 @@ Object.assign(window, {
     entries: 'garden.entries.json',
     library: 'garden.library.json'
   };
+  const FILE_ORDER = ['settings', 'plants', 'entries', 'library'];
+  const REMEMBERED_DIRECTORY_DB = 'garden.daily-record.storage';
+  const REMEMBERED_DIRECTORY_DB_VERSION = 1;
+  const REMEMBERED_DIRECTORY_STORE = 'handles';
+  const REMEMBERED_DIRECTORY_KEY = 'save-directory';
   const FIELD_TYPES = ['number', 'duration', 'boolean', 'select', 'text', 'textarea', 'avoidance_count'];
   const DEFAULT_TOPICS = ['system-design', 'go', 'database', 'distributed-systems', 'algorithms', 'product', 'writing', 'kubernetes'];
   const LANGUAGE_STORAGE_KEY = 'garden.language';
@@ -561,6 +566,29 @@ Object.assign(window, {
       'storage.status': 'storage',
       'storage.connectTitle': '保存フォルダを選択',
       'storage.connectBody': 'Garden は選択したフォルダ直下の4つのJSONファイルを読み書きします。',
+      'storage.localFirstTitle': 'データはあなたのフォルダにだけ保存されます',
+      'storage.localFirstBody': 'フォルダを選ぶと、Garden は既存ファイルを読み込み、ない場合だけ新しく作成します。クラウド送信はありません。',
+      'storage.rememberedTitle': '前回のフォルダを使えます',
+      'storage.rememberedBody': '前回選んだ「{name}」をもう一度開けます。権限確認が出る場合があります。',
+      'storage.restoreFolder': '前回のフォルダを開く',
+      'storage.restoring': '復元中...',
+      'storage.forgetFolder': '記憶を解除',
+      'storage.restoreFailed': '前回のフォルダを開けませんでした。フォルダを選び直してください。',
+      'storage.rememberFailed': 'フォルダの記憶に失敗しました。次回はもう一度選択してください。',
+      'storage.filesTitle': '作成・読み込みするファイル',
+      'storage.setupTitle': 'セットアップの流れ',
+      'storage.setupStep1': 'フォルダを選ぶ',
+      'storage.setupStep2': '4つのJSONを読み込み、なければ作成',
+      'storage.setupStep3': '以後の変更はそのフォルダに保存',
+      'storage.previewTitle': 'まずはサンプルで触ってみる',
+      'storage.previewBody': 'フォルダを選ぶ前に、ダッシュボードと今日の記録をメモリ上だけで試せます。',
+      'storage.previewButton': 'サンプルを開く',
+      'storage.previewName': 'サンプルプレビュー',
+      'storage.previewHelp': 'メモリ上のプレビューです。保存したい場合はフォルダを選んでください。',
+      'storage.previewSaved': 'プレビュー保存',
+      'storage.connectedHelp': '{name} に接続中。再読み込みはフォルダ内のJSONを読み直します。',
+      'storage.unsupportedTitle': 'Chrome または Edge で開いてください',
+      'storage.unsupportedAction': 'この機能は File System Access API を使います。localhost の Garden.html を Chrome / Edge で開くとフォルダ保存を使えます。',
       'storage.unsupported': 'このブラウザはフォルダ保存に対応していません。Chrome または Edge で localhost から開いてください。',
       'storage.connecting': '接続中...',
       'storage.pickFolder': 'フォルダを選ぶ',
@@ -582,6 +610,11 @@ Object.assign(window, {
       'dashboard.todayCareSub': '完了した植物',
       'dashboard.today': 'today',
       'dashboard.goToday': '記録へ',
+      'dashboard.goPlan': '予定を書く',
+      'dashboard.nextAction': '次の一歩',
+      'dashboard.planPrompt': 'まず今日の予定を1つ決めましょう。',
+      'dashboard.todayPrompt': '今日の記録を進めると庭が育ちます。',
+      'dashboard.donePrompt': '今日の手入れは完了しています。振り返りや読書メモを残せます。',
       'dashboard.todaySummary': '{done} / {total} の植物に水をあげました',
       'dashboard.studyWeeks': 'study ・ last 4 weeks',
       'dashboard.perDay': '分 / day',
@@ -601,6 +634,14 @@ Object.assign(window, {
       'today.noPlants': '設定画面で植物を追加してください。',
       'today.saved': '保存済み {time}',
       'today.unsaved': '未保存',
+      'today.changed': '未保存の変更があります',
+      'today.completeReady': '必須項目は入力済みです',
+      'today.missingRequired': '必須項目 {count}件が未完了',
+      'today.missingRequiredList': '未完了: {items}',
+      'today.moreMissing': 'ほか {count}件',
+      'today.planDone': '今日の予定: {plan}',
+      'today.planEmpty': '今日の予定はまだありません。',
+      'today.editPlan': '予定へ',
       'today.reset': '元に戻す',
       'today.save': '水をやる',
       'today.saving': '保存中...',
@@ -736,6 +777,29 @@ Object.assign(window, {
       'storage.status': 'storage',
       'storage.connectTitle': 'Choose a save folder',
       'storage.connectBody': 'Garden reads and writes four JSON files in the folder you choose.',
+      'storage.localFirstTitle': 'Your data stays in your folder',
+      'storage.localFirstBody': 'After you choose a folder, Garden reads existing files and only creates missing ones. Nothing is uploaded.',
+      'storage.rememberedTitle': 'Use your previous folder',
+      'storage.rememberedBody': 'Garden can reopen the previous folder, "{name}". Your browser may ask you to confirm access.',
+      'storage.restoreFolder': 'Open previous folder',
+      'storage.restoring': 'Restoring...',
+      'storage.forgetFolder': 'Forget folder',
+      'storage.restoreFailed': 'Garden could not open the previous folder. Choose the folder again.',
+      'storage.rememberFailed': 'Garden could not remember this folder. You may need to choose it again next time.',
+      'storage.filesTitle': 'Files Garden reads or creates',
+      'storage.setupTitle': 'Setup flow',
+      'storage.setupStep1': 'Choose a folder',
+      'storage.setupStep2': 'Read four JSON files, creating missing files',
+      'storage.setupStep3': 'Save future changes in that folder',
+      'storage.previewTitle': 'Try a sample first',
+      'storage.previewBody': 'Before choosing a folder, you can explore the dashboard and today log in memory only.',
+      'storage.previewButton': 'Open sample',
+      'storage.previewName': 'Sample preview',
+      'storage.previewHelp': 'This is an in-memory preview. Choose a folder when you want to keep your changes.',
+      'storage.previewSaved': 'Preview saved',
+      'storage.connectedHelp': 'Connected to {name}. Reload reads the JSON files in that folder again.',
+      'storage.unsupportedTitle': 'Open in Chrome or Edge',
+      'storage.unsupportedAction': 'Folder saving uses the File System Access API. Open localhost Garden.html in Chrome or Edge to use it.',
       'storage.unsupported': 'This browser does not support folder storage. Open from localhost in Chrome or Edge.',
       'storage.connecting': 'Connecting...',
       'storage.pickFolder': 'Choose folder',
@@ -757,6 +821,11 @@ Object.assign(window, {
       'dashboard.todayCareSub': 'Completed plants',
       'dashboard.today': 'today',
       'dashboard.goToday': 'Go log',
+      'dashboard.goPlan': 'Write plan',
+      'dashboard.nextAction': 'Next step',
+      'dashboard.planPrompt': 'Start by choosing one thing for today.',
+      'dashboard.todayPrompt': 'Log today to keep the garden growing.',
+      'dashboard.donePrompt': 'Today is cared for. You can reflect or add reading notes.',
       'dashboard.todaySummary': '{done} / {total} plants were watered',
       'dashboard.studyWeeks': 'study ・ last 4 weeks',
       'dashboard.perDay': 'min / day',
@@ -776,6 +845,14 @@ Object.assign(window, {
       'today.noPlants': 'Add plants from Settings.',
       'today.saved': 'Saved {time}',
       'today.unsaved': 'Unsaved',
+      'today.changed': 'Unsaved changes',
+      'today.completeReady': 'Required fields are complete',
+      'today.missingRequired': '{count} required fields missing',
+      'today.missingRequiredList': 'Missing: {items}',
+      'today.moreMissing': '{count} more',
+      'today.planDone': "Today's plan: {plan}",
+      'today.planEmpty': "Today's plan is empty.",
+      'today.editPlan': 'Plan',
       'today.reset': 'Reset',
       'today.save': 'Water',
       'today.saving': 'Saving...',
@@ -1369,6 +1446,9 @@ Object.assign(window, {
   function getActiveFields(plant) {
     return (plant?.fields || []).filter(f => !f.deletedAt);
   }
+  function missingRequiredFields(plant, plantValues) {
+    return getActiveFields(plant).filter(field => field.required && !isFilled(field, plantValues?.[field.id]));
+  }
   function isFilled(field, value) {
     if (field.type === 'boolean') return value === true || value === false;
     if (field.type === 'avoidance_count') return Number.isFinite(Number(value)) && Number(value) >= 0;
@@ -1377,10 +1457,8 @@ Object.assign(window, {
   }
   function isPlantDone(plant, plantValues) {
     const fields = getActiveFields(plant);
-    const required = fields.filter(f => f.required);
-    if (required.length) {
-      return required.every(f => isFilled(f, plantValues?.[f.id]));
-    }
+    const required = missingRequiredFields(plant, plantValues);
+    if (fields.some(f => f.required)) return required.length === 0;
     return fields.some(f => isFilled(f, plantValues?.[f.id]));
   }
   function fieldXp(field, value) {
@@ -1642,12 +1720,80 @@ Object.assign(window, {
     };
     return normalizeData(next);
   }
-  async function ensurePermission(directoryHandle) {
-    if (!directoryHandle?.queryPermission || !directoryHandle?.requestPermission) return true;
+  function supportsRememberedDirectory() {
+    return !!window.indexedDB;
+  }
+  function openRememberedDirectoryDb() {
+    if (!supportsRememberedDirectory()) return Promise.resolve(null);
+    return new Promise((resolve, reject) => {
+      const request = window.indexedDB.open(REMEMBERED_DIRECTORY_DB, REMEMBERED_DIRECTORY_DB_VERSION);
+      request.onupgradeneeded = event => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(REMEMBERED_DIRECTORY_STORE)) {
+          db.createObjectStore(REMEMBERED_DIRECTORY_STORE, {
+            keyPath: 'id'
+          });
+        }
+      };
+      request.onsuccess = event => resolve(event.target.result);
+      request.onerror = () => reject(request.error || new Error('Could not open remembered folder storage.'));
+    });
+  }
+  async function withRememberedDirectoryStore(mode, operation) {
+    const db = await openRememberedDirectoryDb();
+    if (!db) return null;
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const close = () => {
+        if (typeof db.close === 'function') db.close();
+      };
+      const settle = (fn, value) => {
+        if (settled) return;
+        settled = true;
+        close();
+        fn(value);
+      };
+      const tx = db.transaction(REMEMBERED_DIRECTORY_STORE, mode);
+      tx.onerror = () => settle(reject, tx.error || new Error('Remembered folder transaction failed.'));
+      tx.onabort = () => settle(reject, tx.error || new Error('Remembered folder transaction was aborted.'));
+      const request = operation(tx.objectStore(REMEMBERED_DIRECTORY_STORE));
+      request.onsuccess = event => settle(resolve, event.target.result);
+      request.onerror = () => settle(reject, request.error || new Error('Remembered folder request failed.'));
+    });
+  }
+  async function rememberDirectory(directoryHandle) {
+    if (!directoryHandle || !supportsRememberedDirectory()) return false;
+    await withRememberedDirectoryStore('readwrite', store => store.put({
+      id: REMEMBERED_DIRECTORY_KEY,
+      name: directoryHandle.name || '',
+      handle: directoryHandle,
+      updatedAt: nowIso()
+    }));
+    return true;
+  }
+  async function loadRememberedDirectory() {
+    if (!supportsRememberedDirectory()) return null;
+    const record = await withRememberedDirectoryStore('readonly', store => store.get(REMEMBERED_DIRECTORY_KEY));
+    return record?.handle || null;
+  }
+  async function forgetRememberedDirectory() {
+    if (!supportsRememberedDirectory()) return false;
+    await withRememberedDirectoryStore('readwrite', store => store.delete(REMEMBERED_DIRECTORY_KEY));
+    return true;
+  }
+  async function queryPermission(directoryHandle) {
+    if (!directoryHandle?.queryPermission) return 'granted';
     const opts = {
       mode: 'readwrite'
     };
-    if ((await directoryHandle.queryPermission(opts)) === 'granted') return true;
+    return await directoryHandle.queryPermission(opts);
+  }
+  async function ensurePermission(directoryHandle) {
+    const opts = {
+      mode: 'readwrite'
+    };
+    if ((await queryPermission(directoryHandle)) === 'granted') return true;
+    if (!directoryHandle?.requestPermission) return false;
     return (await directoryHandle.requestPermission(opts)) === 'granted';
   }
   async function pickDirectory() {
@@ -1668,6 +1814,7 @@ Object.assign(window, {
   const GardenSchema = {
     SCHEMA_VERSION,
     FILES,
+    FILE_ORDER,
     FIELD_TYPES,
     DEFAULT_TOPICS,
     createInitialData,
@@ -1683,6 +1830,7 @@ Object.assign(window, {
     normalizeLibraryFile,
     validatePlantsFile,
     mergePlanEntryValues,
+    storageFileNames: () => FILE_ORDER.map(key => FILES[key]),
     safeId,
     todayKey,
     fmtDate,
@@ -1693,6 +1841,7 @@ Object.assign(window, {
     derive,
     getActivePlants,
     getActiveFields,
+    missingRequiredFields,
     isFilled,
     isPlantDone,
     plantEntryXp,
@@ -1700,8 +1849,13 @@ Object.assign(window, {
   };
   const GardenStore = {
     supportsFileSystemAccess: () => typeof window.showDirectoryPicker === 'function',
+    supportsRememberedDirectory,
     pickDirectory,
+    queryPermission,
     ensurePermission,
+    rememberDirectory,
+    loadRememberedDirectory,
+    forgetRememberedDirectory,
     loadFromDirectory,
     saveFile,
     saveAll,
@@ -2171,7 +2325,7 @@ function PlanScreen({
     return /*#__PURE__*/React.createElement("div", {
       className: "col gap-4",
       style: {
-        padding: '32px 40px 80px',
+        padding: '32px clamp(16px, 4vw, 40px) 80px',
         maxWidth: 760,
         margin: '0 auto'
       }
@@ -2184,7 +2338,7 @@ function PlanScreen({
   return /*#__PURE__*/React.createElement("div", {
     className: "col gap-4",
     style: {
-      padding: '32px 40px 80px',
+      padding: '32px clamp(16px, 4vw, 40px) 80px',
       maxWidth: 760,
       margin: '0 auto'
     }
@@ -2287,6 +2441,7 @@ function TodayScreen({
   selectedDate,
   onDateChange,
   onSaveEntry,
+  onNav,
   storageBusy,
   language,
   t
@@ -2298,17 +2453,40 @@ function TodayScreen({
   const [draft, setDraft] = useStateT(() => cloneEntryValues(entry.values));
   const [savedAt, setSavedAt] = useStateT('');
   const [error, setError] = useStateT('');
+  const savedValues = useMemoT(() => cloneEntryValues(entry.values), [entry.values]);
   useEffectT(() => {
     setDraft(cloneEntryValues((data.entries.entries[selectedDate] || {
       values: {}
     }).values));
-    setSavedAt('');
     setError('');
   }, [data.entries, selectedDate]);
+  useEffectT(() => {
+    setSavedAt('');
+    setError('');
+  }, [selectedDate]);
   const done = plants.filter(plant => GardenCalc.isPlantDone(plant, draft[plant.id])).length;
   const pct = plants.length ? Math.round(done / plants.length * 100) : 0;
   const dateObj = parseLocalDateT(selectedDate);
+  const missingRequired = plants.flatMap(plant => GardenCalc.missingRequiredFields(plant, draft[plant.id]).map(field => ({
+    plant,
+    field
+  })));
+  const missingLabels = missingRequired.slice(0, 3).map(({
+    plant,
+    field
+  }) => `${GardenI18n.displayPlantName(plant, language)}: ${GardenI18n.displayFieldLabel(field, language)}`);
+  if (missingRequired.length > missingLabels.length) {
+    missingLabels.push(t('today.moreMissing', {
+      count: missingRequired.length - missingLabels.length
+    }));
+  }
+  const isDirty = serializeEntryValues(draft) !== serializeEntryValues(savedValues);
+  const hasSavedEntry = Boolean(data.entries.entries[selectedDate]);
+  const statusText = error ? error : savedAt && !isDirty ? t('today.saved', {
+    time: savedAt
+  }) : isDirty ? t('today.changed') : hasSavedEntry ? t('actions.saved') : t('today.unsaved');
   const updateField = (plantId, fieldId, value) => {
+    setSavedAt('');
     setDraft(prev => ({
       ...prev,
       [plantId]: {
@@ -2330,7 +2508,7 @@ function TodayScreen({
   return /*#__PURE__*/React.createElement("div", {
     className: "col gap-4",
     style: {
-      padding: '32px 40px 80px',
+      padding: '32px clamp(16px, 4vw, 40px) 80px',
       maxWidth: 760,
       margin: '0 auto'
     }
@@ -2374,7 +2552,81 @@ function TodayScreen({
     style: {
       width: `${pct}%`
     }
-  }))), plants.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "notice row justify-between items-center gap-3",
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "t-body",
+    style: {
+      flex: '1 1 260px'
+    }
+  }, summary.plan?.state === 'done' ? t('today.planDone', {
+    plan: summary.plan.value
+  }) : t('today.planEmpty')), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    onClick: () => onNav && onNav('plan')
+  }, t('today.editPlan'))), /*#__PURE__*/React.createElement("div", {
+    className: "card row items-center justify-between gap-3",
+    style: {
+      position: 'sticky',
+      top: 64,
+      zIndex: 5,
+      padding: 14,
+      flexWrap: 'wrap',
+      boxShadow: 'var(--shadow-md)'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "col gap-2",
+    style: {
+      flex: '1 1 240px',
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "row items-center gap-2",
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `chip ${missingRequired.length === 0 ? 'chip-leaf' : 'chip-pollen'}`
+  }, missingRequired.length === 0 ? t('today.completeReady') : t('today.missingRequired', {
+    count: missingRequired.length
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "t-tiny",
+    style: {
+      color: error ? 'var(--bloom)' : 'var(--ink-soft)'
+    }
+  }, statusText)), missingLabels.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "t-tiny",
+    style: {
+      color: 'var(--ink-soft)'
+    }
+  }, t('today.missingRequiredList', {
+    items: missingLabels.join('、')
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "bar-track"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bar-fill",
+    style: {
+      width: `${pct}%`
+    }
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "row gap-2",
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn",
+    onClick: () => {
+      setDraft(cloneEntryValues(entry.values));
+      setSavedAt('');
+    }
+  }, t('today.reset')), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    disabled: storageBusy || !isDirty,
+    onClick: save
+  }, storageBusy ? t('today.saving') : t('today.save')))), plants.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "card",
     style: {
       padding: 24
@@ -2396,31 +2648,7 @@ function TodayScreen({
     onChange: value => updateField(plant.id, field.id, value),
     language: language,
     t: t
-  }))))), /*#__PURE__*/React.createElement("div", {
-    className: "row items-center justify-between",
-    style: {
-      marginTop: 8,
-      gap: 12,
-      flexWrap: 'wrap'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "t-tiny"
-  }, error && /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: 'var(--bloom)'
-    }
-  }, error), !error && savedAt && /*#__PURE__*/React.createElement(React.Fragment, null, t('today.saved', {
-    time: savedAt
-  })), !error && !savedAt && /*#__PURE__*/React.createElement(React.Fragment, null, t('today.unsaved'))), /*#__PURE__*/React.createElement("div", {
-    className: "row gap-2"
-  }, /*#__PURE__*/React.createElement("button", {
-    className: "btn",
-    onClick: () => setDraft(cloneEntryValues(entry.values))
-  }, t('today.reset')), /*#__PURE__*/React.createElement("button", {
-    className: "btn btn-primary btn-lg",
-    disabled: storageBusy,
-    onClick: save
-  }, storageBusy ? t('today.saving') : t('today.save')))));
+  }))))));
 }
 function FieldCard({
   children,
@@ -2591,6 +2819,16 @@ function DynamicField({
 function cloneEntryValues(values) {
   return JSON.parse(JSON.stringify(values || {}));
 }
+function serializeEntryValues(values) {
+  const stable = value => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    return Object.keys(value).sort().reduce((acc, key) => {
+      acc[key] = stable(value[key]);
+      return acc;
+    }, {});
+  };
+  return JSON.stringify(stable(values || {}));
+}
 function parseLocalDateT(dateKey) {
   const [y, m, d] = String(dateKey).split('-').map(Number);
   return new Date(y, (m || 1) - 1, d || 1);
@@ -2610,10 +2848,23 @@ function DashboardScreen({
   const studyHours = Math.round(summary.study.totalMinutes / 60 * 10) / 10;
   const sleepValues = summary.entries.map(d => d.sleep).filter(Boolean);
   const sleepAvg = sleepValues.length ? Math.round(sleepValues.reduce((s, d) => s + d, 0) / sleepValues.length * 10) / 10 : 0;
+  const nextAction = summary.plan && summary.plan.state !== 'done' ? {
+    route: 'plan',
+    label: t('dashboard.goPlan'),
+    body: t('dashboard.planPrompt')
+  } : summary.today.careDone < summary.today.careTotal ? {
+    route: 'today',
+    label: t('dashboard.goToday'),
+    body: t('dashboard.todayPrompt')
+  } : {
+    route: 'today',
+    label: t('dashboard.goToday'),
+    body: t('dashboard.donePrompt')
+  };
   return /*#__PURE__*/React.createElement("div", {
     className: "col gap-4",
     style: {
-      padding: '32px 40px 80px',
+      padding: '32px clamp(16px, 4vw, 40px) 80px',
       maxWidth: 1100,
       margin: '0 auto'
     }
@@ -2636,7 +2887,25 @@ function DashboardScreen({
     }
   }, t('dashboard.title', {
     count: summary.plants.length
-  }))), /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "notice row items-center gap-3",
+    style: {
+      flexWrap: 'wrap',
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: '1 1 240px',
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "t-eyebrow"
+  }, t('dashboard.nextAction')), /*#__PURE__*/React.createElement("div", {
+    className: "t-body"
+  }, nextAction.body)), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    onClick: () => onNav && onNav(nextAction.route)
+  }, nextAction.label))), /*#__PURE__*/React.createElement("div", {
     className: "col gap-2 items-end"
   }, /*#__PURE__*/React.createElement("div", {
     className: "t-eyebrow"
@@ -2766,8 +3035,9 @@ function TodaySnapshot({
   return /*#__PURE__*/React.createElement("div", {
     className: "card",
     style: {
-      flex: 1,
-      minWidth: 320,
+      flex: '1 1 320px',
+      minWidth: 0,
+      maxWidth: '100%',
       padding: 22
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -2839,8 +3109,9 @@ function WeekChart({
   return /*#__PURE__*/React.createElement("div", {
     className: "card",
     style: {
-      flex: 1.4,
-      minWidth: 360,
+      flex: '1.4 1 320px',
+      minWidth: 0,
+      maxWidth: '100%',
       padding: 22
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -3065,7 +3336,7 @@ function LibraryScreen({
   return /*#__PURE__*/React.createElement("div", {
     className: "col gap-4",
     style: {
-      padding: '32px 40px 80px',
+      padding: '32px clamp(16px, 4vw, 40px) 80px',
       maxWidth: 980,
       margin: '0 auto'
     }
@@ -3401,7 +3672,7 @@ function StudyScreen({
   return /*#__PURE__*/React.createElement("div", {
     className: "col gap-4",
     style: {
-      padding: '32px 40px 80px',
+      padding: '32px clamp(16px, 4vw, 40px) 80px',
       maxWidth: 980,
       margin: '0 auto'
     }
@@ -3474,7 +3745,8 @@ function StudyScreen({
     className: "row items-center gap-3",
     style: {
       padding: '12px 0',
-      borderBottom: i < summary.study.recentSessions.length - 1 ? '1px solid var(--line-soft)' : 'none'
+      borderBottom: i < summary.study.recentSessions.length - 1 ? '1px solid var(--line-soft)' : 'none',
+      flexWrap: 'wrap'
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "t-tiny mono",
@@ -3488,7 +3760,11 @@ function StudyScreen({
       width: 20
     }
   }, summary.dayName(entry.day)), /*#__PURE__*/React.createElement("span", {
-    className: "chip chip-leaf"
+    className: "chip chip-leaf",
+    style: {
+      maxWidth: '100%',
+      overflowWrap: 'anywhere'
+    }
   }, "#", entry.topic), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1
@@ -3609,7 +3885,7 @@ function SettingsScreen({
   return /*#__PURE__*/React.createElement("div", {
     className: "col gap-4",
     style: {
-      padding: '32px 40px 80px',
+      padding: '32px clamp(16px, 4vw, 40px) 80px',
       maxWidth: 860,
       margin: '0 auto'
     }
@@ -4168,6 +4444,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
 const {
   useEffect: useEffectA,
   useMemo: useMemoA,
+  useRef: useRefA,
   useState: useStateA
 } = React;
 const TWEAK_DEFAULTS = window.GARDEN_TWEAK_DEFAULTS || {
@@ -4217,7 +4494,14 @@ function StorageGate({
   supported,
   busy,
   error,
+  fileNames,
+  summary,
+  rememberedName,
+  restoreBusy,
   onConnect,
+  onRestore,
+  onForgetRemembered,
+  onPreview,
   t
 }) {
   return /*#__PURE__*/React.createElement("div", {
@@ -4233,9 +4517,119 @@ function StorageGate({
     }
   }, t('storage.connectTitle')), /*#__PURE__*/React.createElement("div", {
     className: "t-body"
-  }, t('storage.connectBody'))), !supported && /*#__PURE__*/React.createElement("div", {
-    className: "notice t-body"
-  }, t('storage.unsupported')), error && /*#__PURE__*/React.createElement("div", {
+  }, t('storage.connectBody'))), /*#__PURE__*/React.createElement("div", {
+    className: "notice col gap-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "t-body-strong"
+  }, t('storage.localFirstTitle')), /*#__PURE__*/React.createElement("div", {
+    className: "t-body"
+  }, t('storage.localFirstBody'))), supported && rememberedName && /*#__PURE__*/React.createElement("div", {
+    className: "notice col gap-3"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "t-body-strong"
+  }, t('storage.rememberedTitle')), /*#__PURE__*/React.createElement("div", {
+    className: "t-body",
+    style: {
+      marginTop: 4
+    }
+  }, t('storage.rememberedBody', {
+    name: rememberedName
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "row gap-2",
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-primary",
+    disabled: busy || restoreBusy,
+    onClick: onRestore
+  }, restoreBusy ? t('storage.restoring') : t('storage.restoreFolder')), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-ghost",
+    disabled: busy || restoreBusy,
+    onClick: onForgetRemembered
+  }, t('storage.forgetFolder')))), /*#__PURE__*/React.createElement("div", {
+    className: "row gap-3",
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-sunk col gap-2",
+    style: {
+      flex: '1 1 220px',
+      padding: 16,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "t-eyebrow"
+  }, t('storage.filesTitle')), /*#__PURE__*/React.createElement("div", {
+    className: "col gap-2"
+  }, fileNames.map(name => /*#__PURE__*/React.createElement("div", {
+    key: name,
+    className: "row items-center gap-2",
+    style: {
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "chip chip-leaf",
+    style: {
+      flex: 'none'
+    }
+  }, "JSON"), /*#__PURE__*/React.createElement("span", {
+    className: "t-tiny mono",
+    style: {
+      overflowWrap: 'anywhere'
+    }
+  }, name))))), /*#__PURE__*/React.createElement("div", {
+    className: "card-sunk col gap-2",
+    style: {
+      flex: '1 1 220px',
+      padding: 16,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "t-eyebrow"
+  }, t('storage.setupTitle')), [t('storage.setupStep1'), t('storage.setupStep2'), t('storage.setupStep3')].map((step, i) => /*#__PURE__*/React.createElement("div", {
+    key: step,
+    className: "row gap-2"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "chip"
+  }, i + 1), /*#__PURE__*/React.createElement("span", {
+    className: "t-body"
+  }, step))))), /*#__PURE__*/React.createElement("div", {
+    className: "card-sunk col gap-3",
+    style: {
+      padding: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "t-eyebrow"
+  }, t('storage.previewTitle')), /*#__PURE__*/React.createElement("div", {
+    className: "t-body",
+    style: {
+      marginTop: 4
+    }
+  }, t('storage.previewBody'))), /*#__PURE__*/React.createElement("div", {
+    className: "row gap-2",
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "chip chip-leaf"
+  }, t('dashboard.todayCare'), ": ", summary.today.careTotal), /*#__PURE__*/React.createElement("span", {
+    className: "chip"
+  }, t('dashboard.badges'), ": ", summary.plants.length)), /*#__PURE__*/React.createElement("button", {
+    className: "btn",
+    disabled: busy,
+    onClick: onPreview,
+    style: {
+      alignSelf: 'flex-start'
+    }
+  }, t('storage.previewButton'))), !supported && /*#__PURE__*/React.createElement("div", {
+    className: "notice col gap-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "t-body-strong"
+  }, t('storage.unsupportedTitle')), /*#__PURE__*/React.createElement("div", {
+    className: "t-body"
+  }, t('storage.unsupportedAction'))), error && /*#__PURE__*/React.createElement("div", {
     className: "notice t-body",
     style: {
       color: 'var(--bloom)'
@@ -4255,12 +4649,18 @@ function StorageBar({
   warnings,
   savedAt,
   error,
+  previewMode,
   onConnect,
   onReload,
   t
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "storage-bar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "col gap-2",
+    style: {
+      minWidth: 0
+    }
   }, /*#__PURE__*/React.createElement("div", {
     className: "row items-center gap-2",
     style: {
@@ -4271,8 +4671,12 @@ function StorageBar({
     className: "chip chip-leaf"
   }, connectedName || t('storage.unconnected')), savedAt && /*#__PURE__*/React.createElement("span", {
     className: "t-tiny mono"
-  }, t('storage.saved', {
+  }, previewMode ? savedAt : t('storage.saved', {
     time: savedAt
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "t-tiny"
+  }, previewMode ? t('storage.previewHelp') : t('storage.connectedHelp', {
+    name: connectedName || t('storage.unconnected')
   })), warnings.length > 0 && /*#__PURE__*/React.createElement("span", {
     className: "chip chip-bloom"
   }, t('storage.warnings', {
@@ -4284,7 +4688,7 @@ function StorageBar({
     }
   }, error)), /*#__PURE__*/React.createElement("div", {
     className: "row gap-2"
-  }, /*#__PURE__*/React.createElement("button", {
+  }, !previewMode && /*#__PURE__*/React.createElement("button", {
     className: "btn btn-ghost",
     disabled: busy,
     onClick: onReload
@@ -4327,6 +4731,10 @@ function App() {
   const [route, setRoute] = useStateA('dashboard');
   const [tweaksOpen, setTweaksOpen] = useStateA(false);
   const [directoryHandle, setDirectoryHandle] = useStateA(null);
+  const [previewMode, setPreviewMode] = useStateA(false);
+  const [rememberedHandle, setRememberedHandle] = useStateA(null);
+  const [rememberedName, setRememberedName] = useStateA('');
+  const [restoreBusy, setRestoreBusy] = useStateA(false);
   const [connectedName, setConnectedName] = useStateA('');
   const [gardenData, setGardenData] = useStateA(() => GardenSchema.createInitialData());
   const [selectedDate, setSelectedDate] = useStateA(() => GardenSchema.todayKey());
@@ -4334,6 +4742,7 @@ function App() {
   const [storageError, setStorageError] = useStateA('');
   const [storageBusy, setStorageBusy] = useStateA(false);
   const [savedAt, setSavedAt] = useStateA('');
+  const storageOperationRef = useRefA(0);
   const storageSupported = GardenStore.supportsFileSystemAccess();
   const summary = useMemoA(() => GardenCalc.derive(gardenData, selectedDate), [gardenData, selectedDate]);
   const t = useMemoA(() => (key, params) => GardenI18n.t(language, key, params), [language]);
@@ -4348,6 +4757,51 @@ function App() {
       // Storage can be unavailable in private or embedded contexts.
     }
   }, [language]);
+  const folderName = handle => handle?.name || 'garden folder';
+  const finishDirectoryConnection = (handle, result, savedLabel = '') => {
+    setDirectoryHandle(handle);
+    setPreviewMode(false);
+    setConnectedName(folderName(handle));
+    setGardenData(result.data);
+    setWarnings(result.warnings || []);
+    setSavedAt(savedLabel);
+    setRememberedHandle(handle);
+    setRememberedName(folderName(handle));
+  };
+  useEffectA(() => {
+    if (!storageSupported || !GardenStore.supportsRememberedDirectory()) return undefined;
+    let cancelled = false;
+    const operationId = ++storageOperationRef.current;
+    const restoreIfAlreadyAllowed = async () => {
+      setRestoreBusy(true);
+      try {
+        const handle = await GardenStore.loadRememberedDirectory();
+        if (cancelled || operationId !== storageOperationRef.current || !handle) return;
+        setRememberedHandle(handle);
+        setRememberedName(folderName(handle));
+        const permission = await GardenStore.queryPermission(handle);
+        if (cancelled || operationId !== storageOperationRef.current) return;
+        if (permission !== 'granted') return;
+        setStorageBusy(true);
+        const result = await GardenStore.loadFromDirectory(handle);
+        if (cancelled || operationId !== storageOperationRef.current) return;
+        finishDirectoryConnection(handle, result, result.created?.length ? t('storage.initialized') : '');
+      } catch (err) {
+        if (!cancelled && operationId === storageOperationRef.current) {
+          setStorageError(t('storage.restoreFailed'));
+        }
+      } finally {
+        if (!cancelled && operationId === storageOperationRef.current) {
+          setRestoreBusy(false);
+          setStorageBusy(false);
+        }
+      }
+    };
+    restoreIfAlreadyAllowed();
+    return () => {
+      cancelled = true;
+    };
+  }, [storageSupported]);
   useEffectA(() => {
     const onMsg = event => {
       if (event.data?.type === '__activate_edit_mode') setTweaksOpen(true);
@@ -4363,20 +4817,72 @@ function App() {
     setLanguageState(GardenI18n.supportedLanguage(nextLanguage));
   };
   const connectFolder = async () => {
+    const operationId = ++storageOperationRef.current;
     setStorageBusy(true);
+    setRestoreBusy(false);
     setStorageError('');
     try {
       const handle = await GardenStore.pickDirectory();
       const result = await GardenStore.loadFromDirectory(handle);
-      setDirectoryHandle(handle);
-      setConnectedName(handle.name || 'garden folder');
-      setGardenData(result.data);
-      setWarnings(result.warnings || []);
-      setSavedAt(result.created?.length ? t('storage.initialized') : '');
+      if (operationId !== storageOperationRef.current) return;
+      finishDirectoryConnection(handle, result, result.created?.length ? t('storage.initialized') : '');
+      try {
+        await GardenStore.rememberDirectory(handle);
+      } catch (rememberErr) {
+        if (operationId === storageOperationRef.current) setStorageError(t('storage.rememberFailed'));
+      }
     } catch (err) {
-      if (err?.name !== 'AbortError') setStorageError(err?.message || String(err));
+      if (operationId === storageOperationRef.current && err?.name !== 'AbortError') setStorageError(err?.message || String(err));
     } finally {
-      setStorageBusy(false);
+      if (operationId === storageOperationRef.current) setStorageBusy(false);
+    }
+  };
+  const restoreRememberedFolder = async () => {
+    if (!rememberedHandle) return;
+    const operationId = ++storageOperationRef.current;
+    setStorageBusy(true);
+    setRestoreBusy(true);
+    setStorageError('');
+    try {
+      if (!(await GardenStore.ensurePermission(rememberedHandle))) {
+        throw new Error(t('storage.restoreFailed'));
+      }
+      const result = await GardenStore.loadFromDirectory(rememberedHandle);
+      if (operationId !== storageOperationRef.current) return;
+      finishDirectoryConnection(rememberedHandle, result, result.created?.length ? t('storage.initialized') : '');
+      try {
+        await GardenStore.rememberDirectory(rememberedHandle);
+      } catch (rememberErr) {
+        if (operationId === storageOperationRef.current) setStorageError(t('storage.rememberFailed'));
+      }
+    } catch (err) {
+      if (operationId === storageOperationRef.current && err?.name !== 'AbortError') {
+        setStorageError(err?.message || t('storage.restoreFailed'));
+      }
+    } finally {
+      if (operationId === storageOperationRef.current) {
+        setStorageBusy(false);
+        setRestoreBusy(false);
+      }
+    }
+  };
+  const forgetRememberedFolder = async () => {
+    const operationId = ++storageOperationRef.current;
+    setStorageBusy(true);
+    setRestoreBusy(true);
+    setStorageError('');
+    try {
+      await GardenStore.forgetRememberedDirectory();
+      if (operationId !== storageOperationRef.current) return;
+      setRememberedHandle(null);
+      setRememberedName('');
+    } catch (err) {
+      if (operationId === storageOperationRef.current) setStorageError(err?.message || String(err));
+    } finally {
+      if (operationId === storageOperationRef.current) {
+        setStorageBusy(false);
+        setRestoreBusy(false);
+      }
     }
   };
   const reloadFolder = async () => {
@@ -4394,7 +4900,7 @@ function App() {
     }
   };
   const saveFile = async (key, nextFile) => {
-    if (!directoryHandle) throw new Error('Save folder is not connected.');
+    if (!directoryHandle && !previewMode) throw new Error('Save folder is not connected.');
     setStorageBusy(true);
     setStorageError('');
     try {
@@ -4402,6 +4908,11 @@ function App() {
         ...gardenData,
         [key]: nextFile
       });
+      if (previewMode) {
+        setGardenData(normalized);
+        setSavedAt(t('storage.previewSaved'));
+        return normalized;
+      }
       const saved = await GardenStore.saveFile(directoryHandle, key, normalized[key]);
       const nextData = GardenSchema.normalizeData({
         ...gardenData,
@@ -4430,6 +4941,17 @@ function App() {
   const savePlants = async plantsFile => saveFile('plants', plantsFile);
   const saveLibrary = async libraryFile => saveFile('library', libraryFile);
   const saveSettings = async settingsFile => saveFile('settings', settingsFile);
+  const startPreview = () => {
+    storageOperationRef.current += 1;
+    setStorageError('');
+    setWarnings([]);
+    setStorageBusy(false);
+    setRestoreBusy(false);
+    setDirectoryHandle(null);
+    setPreviewMode(true);
+    setConnectedName(t('storage.previewName'));
+    setRoute('dashboard');
+  };
   const sharedProps = {
     language,
     t
@@ -4456,6 +4978,7 @@ function App() {
       selectedDate: selectedDate,
       onDateChange: setSelectedDate,
       onSaveEntry: saveEntry,
+      onNav: setRoute,
       storageBusy: storageBusy
     }, sharedProps)),
     study: /*#__PURE__*/React.createElement(StudyScreen, _extends({
@@ -4552,20 +5075,28 @@ function App() {
   }))))), /*#__PURE__*/React.createElement("main", {
     className: "main",
     "data-screen-label": route
-  }, directoryHandle && /*#__PURE__*/React.createElement(StorageBar, {
-    connectedName: connectedName,
+  }, (directoryHandle || previewMode) && /*#__PURE__*/React.createElement(StorageBar, {
+    connectedName: previewMode ? t('storage.previewName') : connectedName,
     busy: storageBusy,
     warnings: warnings,
     savedAt: savedAt,
     error: storageError,
+    previewMode: previewMode,
     onConnect: connectFolder,
     onReload: reloadFolder,
     t: t
-  }), directoryHandle ? screens[route] : /*#__PURE__*/React.createElement(StorageGate, {
+  }), directoryHandle || previewMode ? screens[route] : /*#__PURE__*/React.createElement(StorageGate, {
     supported: storageSupported,
     busy: storageBusy,
     error: storageError,
+    fileNames: GardenSchema.storageFileNames(),
+    summary: summary,
+    rememberedName: rememberedName,
+    restoreBusy: restoreBusy,
     onConnect: connectFolder,
+    onRestore: restoreRememberedFolder,
+    onForgetRemembered: forgetRememberedFolder,
+    onPreview: startPreview,
     t: t
   })), tweaksOpen && /*#__PURE__*/React.createElement(TweaksPanel, {
     title: "Tweaks"
