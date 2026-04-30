@@ -1,10 +1,10 @@
-/* global React, Plant, GardenCalc */
-// Today screen — dynamic daily input form backed by JSON entries.
+/* global React, Plant, GardenCalc, GardenI18n */
+// Today screen: dynamic daily care input form backed by JSON entries.
 
 const { useEffect: useEffectT, useMemo: useMemoT, useState: useStateT } = React;
 
-function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, storageBusy }) {
-  const plants = useMemoT(() => summary.plants, [summary.plants]);
+function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, storageBusy, language, t }) {
+  const plants = useMemoT(() => summary.plants.filter((plant) => plant.id !== 'plan'), [summary.plants]);
   const entry = data.entries.entries[selectedDate] || { values: {} };
   const [draft, setDraft] = useStateT(() => cloneEntryValues(entry.values));
   const [savedAt, setSavedAt] = useStateT('');
@@ -44,17 +44,13 @@ function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, s
   return (
     <div className="col gap-4" style={{ padding: '32px 40px 80px', maxWidth: 760, margin: '0 auto' }}>
       <div className="col gap-2">
-        <div className="t-eyebrow">water · {selectedDate} · {['日','月','火','水','木','金','土'][dateObj.getDay()]}</div>
+        <div className="t-eyebrow">{t('today.eyebrow', { date: selectedDate, day: summary.dayName(dateObj) })}</div>
         <div className="row justify-between items-end gap-3" style={{ flexWrap: 'wrap' }}>
-          <h1 className="t-hero" style={{ margin: 0 }}>
-            今日の<span style={{ fontStyle: 'italic', color: 'var(--leaf-700)' }}>手入れ</span>
-          </h1>
+          <h1 className="t-hero" style={{ margin: 0 }}>{t('today.title')}</h1>
           <input className="input" type="date" value={selectedDate} onChange={(e) => onDateChange(e.target.value)}
             style={{ width: 168 }} />
         </div>
-        <div className="t-body">
-          {plants.length}つの植物のうち <b style={{ color: 'var(--ink)' }}>{done}つ</b> 完了。
-        </div>
+        <div className="t-body">{t('today.progress', { total: plants.length, done })}</div>
         <div className="bar-track" style={{ marginTop: 4 }}>
           <div className="bar-fill" style={{ width: `${pct}%` }}></div>
         </div>
@@ -62,12 +58,12 @@ function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, s
 
       {plants.length === 0 && (
         <div className="card" style={{ padding: 24 }}>
-          <div className="t-body">設定画面で植物を追加してください。</div>
+          <div className="t-body">{t('today.noPlants')}</div>
         </div>
       )}
 
       {plants.map((plant) => (
-        <FieldCard key={plant.id} plant={plant} values={draft[plant.id]}>
+        <FieldCard key={plant.id} plant={plant} values={draft[plant.id]} language={language} t={t}>
           <div className="col gap-3">
             {GardenCalc.getActiveFields(plant).map((field) => (
               <DynamicField
@@ -75,6 +71,8 @@ function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, s
                 field={field}
                 value={(draft[plant.id] || {})[field.id]}
                 onChange={(value) => updateField(plant.id, field.id, value)}
+                language={language}
+                t={t}
               />
             ))}
           </div>
@@ -84,13 +82,13 @@ function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, s
       <div className="row items-center justify-between" style={{ marginTop: 8, gap: 12, flexWrap: 'wrap' }}>
         <div className="t-tiny">
           {error && <span style={{ color: 'var(--bloom)' }}>{error}</span>}
-          {!error && savedAt && <>保存済み <span className="mono">{savedAt}</span></>}
-          {!error && !savedAt && <>未保存</>}
+          {!error && savedAt && <>{t('today.saved', { time: savedAt })}</>}
+          {!error && !savedAt && <>{t('today.unsaved')}</>}
         </div>
         <div className="row gap-2">
-          <button className="btn" onClick={() => setDraft(cloneEntryValues(entry.values))}>元に戻す</button>
+          <button className="btn" onClick={() => setDraft(cloneEntryValues(entry.values))}>{t('today.reset')}</button>
           <button className="btn btn-primary btn-lg" disabled={storageBusy} onClick={save}>
-            {storageBusy ? '保存中…' : '水をやる →'}
+            {storageBusy ? t('today.saving') : t('today.save')}
           </button>
         </div>
       </div>
@@ -98,31 +96,31 @@ function TodayScreen({ data, summary, selectedDate, onDateChange, onSaveEntry, s
   );
 }
 
-function FieldCard({ children, plant, values }) {
+function FieldCard({ children, plant, values, language, t }) {
   const done = GardenCalc.isPlantDone(plant, values);
   return (
     <div className="card" style={{ padding: 18, position: 'relative' }}>
       <div className="row items-center gap-2" style={{ marginBottom: 12 }}>
         <Plant stage={Math.min(plant.stage || 1, 3)} size={34} color={`var(--${plant.color})`} />
         <div className="col" style={{ gap: 0, flex: 1 }}>
-          <div className="t-body-strong">{plant.jp}</div>
-          <div className="t-tiny mono">{plant.name} · {plant.streak || 0}d streak</div>
+          <div className="t-body-strong">{GardenI18n.displayPlantName(plant, language)}</div>
+          <div className="t-tiny mono">{plant.name} ・ {plant.streak || 0}d streak</div>
         </div>
-        {done ? <span className="chip chip-leaf">完了</span> : <span className="chip">未記録</span>}
+        {done ? <span className="chip chip-leaf">{t('today.done')}</span> : <span className="chip">{t('today.pending')}</span>}
       </div>
       {children}
     </div>
   );
 }
 
-function DynamicField({ field, value, onChange }) {
-  const label = `${field.label}${field.required ? ' *' : ''}`;
+function DynamicField({ field, value, onChange, language, t }) {
+  const label = `${GardenI18n.displayFieldLabel(field, language)}${field.required ? ' *' : ''}`;
   if (field.type === 'boolean') {
     return (
       <div>
         <label className="t-tiny" style={{ display: 'block', marginBottom: 6 }}>{label}</label>
         <div className="row gap-2">
-          {[{ v: true, label: 'はい' }, { v: false, label: 'いいえ' }].map((o) => (
+          {[{ v: true, label: t('today.yes') }, { v: false, label: t('today.no') }].map((o) => (
             <button key={String(o.v)} className="btn" onClick={() => onChange(o.v)}
               style={{
                 flex: 1,
@@ -144,9 +142,29 @@ function DynamicField({ field, value, onChange }) {
       <div>
         <label className="t-tiny" style={{ display: 'block', marginBottom: 6 }}>{label}</label>
         <select className="input" value={value || ''} onChange={(e) => onChange(e.target.value)}>
-          <option value="">未選択</option>
+          <option value="">{t('today.unselected')}</option>
           {(field.options || []).map((option) => <option key={option} value={option}>{option}</option>)}
         </select>
+      </div>
+    );
+  }
+  if (field.type === 'avoidance_count') {
+    const hasValue = value !== '' && value != null;
+    const count = hasValue ? Math.max(0, Math.floor(Number(value))) : 0;
+    const xp = hasValue ? Math.max(0, 12 - count * 3) : 0;
+    return (
+      <div>
+        <label className="t-tiny" style={{ display: 'block', marginBottom: 6 }}>{label}</label>
+        <div className="row items-center gap-2" style={{ flexWrap: 'wrap' }}>
+          <input className="input" type="number" value={value ?? ''}
+            min={0}
+            step={1}
+            onChange={(e) => onChange(e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value))))}
+            style={{ maxWidth: 140 }} />
+          {field.unit && <span className="t-body">{language === 'en' && field.unit === '回' ? t('units.count') : field.unit}</span>}
+          <span className="chip chip-pollen">{t('today.avoidanceHelp')}</span>
+          {hasValue && <span className="t-tiny mono">+{xp}xp</span>}
+        </div>
       </div>
     );
   }
@@ -155,7 +173,7 @@ function DynamicField({ field, value, onChange }) {
       <div>
         <label className="t-tiny" style={{ display: 'block', marginBottom: 6 }}>{label}</label>
         <textarea className="input" value={value || ''} onChange={(e) => onChange(e.target.value)}
-          placeholder={`${field.label}を書く`} />
+          placeholder={t('today.writePlaceholder', { label: GardenI18n.displayFieldLabel(field, language) })} />
       </div>
     );
   }

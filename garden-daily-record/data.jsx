@@ -9,8 +9,361 @@
     entries: 'garden.entries.json',
     library: 'garden.library.json',
   };
-  const FIELD_TYPES = ['number', 'duration', 'boolean', 'select', 'text', 'textarea'];
+  const FIELD_TYPES = ['number', 'duration', 'boolean', 'select', 'text', 'textarea', 'avoidance_count'];
   const DEFAULT_TOPICS = ['system-design', 'go', 'database', 'distributed-systems', 'algorithms', 'product', 'writing', 'kubernetes'];
+  const LANGUAGE_STORAGE_KEY = 'garden.language';
+  const TRANSLATIONS = {
+    ja: {
+      'app.name': 'Garden',
+      'nav.main': 'メイン',
+      'nav.dashboard': 'ダッシュボード',
+      'nav.plan': '予定',
+      'nav.today': '今日の記録',
+      'nav.plants': '植物',
+      'nav.study': '学習ログ',
+      'nav.library': 'ライブラリ',
+      'nav.other': 'その他',
+      'nav.settings': '設定',
+      'nav.scholar': 'scholar',
+      'nav.day': 'day {day}',
+      'language.label': '言語',
+      'language.ja': '日本語',
+      'language.en': 'English',
+      'storage.status': 'storage',
+      'storage.connectTitle': '保存フォルダを選択',
+      'storage.connectBody': 'Garden は選択したフォルダ直下の4つのJSONファイルを読み書きします。',
+      'storage.unsupported': 'このブラウザはフォルダ保存に対応していません。Chrome または Edge で localhost から開いてください。',
+      'storage.connecting': '接続中...',
+      'storage.pickFolder': 'フォルダを選ぶ',
+      'storage.unconnected': '未接続',
+      'storage.saved': '保存 {time}',
+      'storage.initialized': '初期化済み',
+      'storage.warnings': '警告 {count}',
+      'storage.reload': '再読み込み',
+      'storage.changeFolder': 'フォルダ変更',
+      'dashboard.eyebrow': 'your garden ・ day {day}',
+      'dashboard.title': '{count}つの植物が育っています',
+      'dashboard.level': 'scholar ・ level {level}',
+      'dashboard.streak': '連続記録',
+      'dashboard.studyTotal': '学習合計',
+      'dashboard.studyTotalSub': 'すべての記録',
+      'dashboard.sleepAverage': '睡眠平均',
+      'dashboard.sleepAverageSub': '記録済みの日',
+      'dashboard.todayCare': '今日の記録',
+      'dashboard.todayCareSub': '完了した植物',
+      'dashboard.today': 'today',
+      'dashboard.goToday': '記録へ',
+      'dashboard.todaySummary': '{done} / {total} の植物に水をあげました',
+      'dashboard.studyWeeks': 'study ・ last 4 weeks',
+      'dashboard.perDay': '分 / day',
+      'dashboard.noEntries': '記録がまだありません',
+      'dashboard.past': 'past',
+      'dashboard.now': 'today',
+      'dashboard.badges': 'badges',
+      'plan.eyebrow': 'plan ・ {date}',
+      'plan.title': '今日の予定',
+      'plan.body': '今日やることを先に決めると「計画」の植物が育ちます。',
+      'plan.placeholder': '今日やることを書く',
+      'plan.saved': '予定を保存しました {time}',
+      'plan.empty': '計画植物が見つかりません。設定画面で plan 植物を確認してください。',
+      'today.eyebrow': 'water ・ {date} ・ {day}',
+      'today.title': '今日の記録',
+      'today.progress': '{total}つの植物のうち {done}つ 完了。',
+      'today.noPlants': '設定画面で植物を追加してください。',
+      'today.saved': '保存済み {time}',
+      'today.unsaved': '未保存',
+      'today.reset': '元に戻す',
+      'today.save': '水をやる',
+      'today.saving': '保存中...',
+      'today.done': '完了',
+      'today.pending': '未記録',
+      'today.yes': 'はい',
+      'today.no': 'いいえ',
+      'today.unselected': '未選択',
+      'today.writePlaceholder': '{label}を書く',
+      'today.avoidanceHelp': '0に近いほどXP',
+      'settings.title': '設定',
+      'settings.eyebrow': 'settings',
+      'settings.appName': 'アプリ名',
+      'settings.startDate': '開始日',
+      'settings.saveSettings': '設定を保存',
+      'settings.plants': '植物',
+      'settings.newPlant': '新しい植物',
+      'settings.edit': '編集',
+      'settings.delete': '削除',
+      'settings.up': '↑',
+      'settings.down': '↓',
+      'settings.editor': 'plant editor',
+      'settings.cancel': 'キャンセル',
+      'settings.savePlant': '植物を保存',
+      'settings.plantId': 'ID',
+      'settings.plantName': '英名',
+      'settings.plantJp': '表示名',
+      'settings.emoji': '絵文字',
+      'settings.color': '色',
+      'settings.desc': '説明',
+      'settings.visible': '表示する',
+      'settings.fieldId': 'フィールドID',
+      'settings.fieldLabel': 'ラベル',
+      'settings.fieldType': '型',
+      'settings.fieldUnit': '単位',
+      'settings.fieldRequired': '必須',
+      'settings.fieldOptions': '選択肢',
+      'settings.addField': '項目を追加',
+      'settings.hidden': '非表示',
+      'settings.show': '表示',
+      'settings.hide': '非表示',
+      'settings.newPlantName': '新しい植物',
+      'settings.deletePlantConfirm': 'この植物を削除しますか？既存の記録はJSONに残りますが、アプリには表示されません。',
+      'settings.deleteFieldConfirm': 'この項目を削除しますか？既存の値はJSONに残りますが、表示されなくなります。',
+      'library.eyebrow': 'library ・ words',
+      'library.title': '読んだこと、気づいたこと',
+      'library.books': '本',
+      'library.notes': 'メモ',
+      'library.articles': '記事',
+      'library.add': '追加',
+      'library.empty': 'まだ記録がありません',
+      'library.deleteConfirm': 'このライブラリアイテムを削除しますか？',
+      'library.titleField': 'タイトル',
+      'library.author': '著者',
+      'library.source': '出典',
+      'library.progress': '進捗 %',
+      'library.status': '状態',
+      'library.tags': 'タグ',
+      'library.body': '本文',
+      'library.done': '読了',
+      'study.eyebrow': 'study log ・ mind',
+      'study.title': '{hours} 時間、分け入った深い森',
+      'study.byTopic': 'by topic',
+      'study.empty': '学習記録がまだありません。',
+      'study.recent': 'recent sessions',
+      'study.noSessions': 'まだセッションがありません。',
+      'validation.titleRequired': 'タイトルは必須です。',
+      'validation.url': 'URLは http:// または https:// で始めてください。',
+      'validation.progress': '読書進捗は0から100%の間にしてください。',
+      'validation.plantName': '植物の表示名は必須です。',
+      'validation.plantId': '植物IDは必須です。',
+      'validation.fieldRequired': '項目を1つ以上追加してください。',
+      'validation.fieldId': 'フィールドIDは必須です。',
+      'validation.duplicateField': 'フィールドIDが重複しています: {id}',
+      'validation.fieldLabel': 'フィールドラベルは必須です。',
+      'validation.selectOptions': '選択式フィールドには選択肢が1つ以上必要です。',
+      'actions.save': '保存',
+      'actions.saved': '保存済み',
+      'actions.done': '完了',
+      'actions.pending': '未記録',
+      'units.days': '日',
+      'units.hours': '時間',
+      'units.minutes': '分',
+      'units.sessions': 'sessions',
+      'units.entries': 'entries',
+      'units.entry': 'entry',
+      'units.count': '回',
+      'values.empty': '-',
+      'values.good': 'よい',
+      'values.normal': '普通',
+      'values.light': '浅い',
+      'plants.mind': '学び',
+      'plants.plan': '計画',
+      'plants.body': 'からだ',
+      'plants.avoid': '控える',
+      'plants.rest': 'やすみ',
+      'plants.words': 'ことば',
+      'plants.reflect': 'ふりかえり',
+      'plants.craft': 'つくる',
+      'fields.study_minutes': '学習時間',
+      'fields.study_topic': 'トピック',
+      'fields.study_note': '学びメモ',
+      'fields.today_plan': '今日の予定',
+      'fields.workout': '体を動かした',
+      'fields.body_note': '運動メモ',
+      'fields.avoid_count': 'やらなかったらよいことの回数',
+      'fields.sleep': '睡眠時間',
+      'fields.sleep_quality': '睡眠の質',
+      'fields.reading_title': '読んだもの',
+      'fields.reading_pages': 'ページ数',
+      'fields.reading_note': '読書メモ',
+      'fields.memo': '気づきのメモ',
+      'fields.tomorrow': '明日やること',
+      'fields.craft_minutes': '制作時間',
+      'fields.craft_note': '作ったもの',
+    },
+    en: {
+      'app.name': 'Garden',
+      'nav.main': 'Main',
+      'nav.dashboard': 'Dashboard',
+      'nav.plan': 'Plan',
+      'nav.today': 'Today',
+      'nav.plants': 'Plants',
+      'nav.study': 'Study Log',
+      'nav.library': 'Library',
+      'nav.other': 'Other',
+      'nav.settings': 'Settings',
+      'nav.scholar': 'scholar',
+      'nav.day': 'day {day}',
+      'language.label': 'Language',
+      'language.ja': '日本語',
+      'language.en': 'English',
+      'storage.status': 'storage',
+      'storage.connectTitle': 'Choose a save folder',
+      'storage.connectBody': 'Garden reads and writes four JSON files in the folder you choose.',
+      'storage.unsupported': 'This browser does not support folder storage. Open from localhost in Chrome or Edge.',
+      'storage.connecting': 'Connecting...',
+      'storage.pickFolder': 'Choose folder',
+      'storage.unconnected': 'Not connected',
+      'storage.saved': 'saved {time}',
+      'storage.initialized': 'initialized',
+      'storage.warnings': '{count} warnings',
+      'storage.reload': 'Reload',
+      'storage.changeFolder': 'Change folder',
+      'dashboard.eyebrow': 'your garden ・ day {day}',
+      'dashboard.title': '{count} plants are growing',
+      'dashboard.level': 'scholar ・ level {level}',
+      'dashboard.streak': 'Streak',
+      'dashboard.studyTotal': 'Study total',
+      'dashboard.studyTotalSub': 'All entries',
+      'dashboard.sleepAverage': 'Sleep avg',
+      'dashboard.sleepAverageSub': 'Logged days',
+      'dashboard.todayCare': "Today's care",
+      'dashboard.todayCareSub': 'Completed plants',
+      'dashboard.today': 'today',
+      'dashboard.goToday': 'Go log',
+      'dashboard.todaySummary': '{done} / {total} plants were watered',
+      'dashboard.studyWeeks': 'study ・ last 4 weeks',
+      'dashboard.perDay': 'min / day',
+      'dashboard.noEntries': 'No entries yet',
+      'dashboard.past': 'past',
+      'dashboard.now': 'today',
+      'dashboard.badges': 'badges',
+      'plan.eyebrow': 'plan ・ {date}',
+      'plan.title': "Today's plan",
+      'plan.body': 'Write the plan first to grow the Plan plant.',
+      'plan.placeholder': 'Write what you will do today',
+      'plan.saved': 'Plan saved {time}',
+      'plan.empty': 'The Plan plant is missing. Check the plan plant in Settings.',
+      'today.eyebrow': 'water ・ {date} ・ {day}',
+      'today.title': "Today's log",
+      'today.progress': '{done} of {total} plants complete.',
+      'today.noPlants': 'Add plants from Settings.',
+      'today.saved': 'Saved {time}',
+      'today.unsaved': 'Unsaved',
+      'today.reset': 'Reset',
+      'today.save': 'Water',
+      'today.saving': 'Saving...',
+      'today.done': 'Done',
+      'today.pending': 'Pending',
+      'today.yes': 'Yes',
+      'today.no': 'No',
+      'today.unselected': 'Unselected',
+      'today.writePlaceholder': 'Write {label}',
+      'today.avoidanceHelp': 'Closer to 0 gives more XP',
+      'settings.title': 'Settings',
+      'settings.eyebrow': 'settings',
+      'settings.appName': 'App name',
+      'settings.startDate': 'Start date',
+      'settings.saveSettings': 'Save settings',
+      'settings.plants': 'Plants',
+      'settings.newPlant': 'New plant',
+      'settings.edit': 'Edit',
+      'settings.delete': 'Delete',
+      'settings.up': '↑',
+      'settings.down': '↓',
+      'settings.editor': 'plant editor',
+      'settings.cancel': 'Cancel',
+      'settings.savePlant': 'Save plant',
+      'settings.plantId': 'ID',
+      'settings.plantName': 'English name',
+      'settings.plantJp': 'Display name',
+      'settings.emoji': 'Emoji',
+      'settings.color': 'Color',
+      'settings.desc': 'Description',
+      'settings.visible': 'Visible',
+      'settings.fieldId': 'Field ID',
+      'settings.fieldLabel': 'Label',
+      'settings.fieldType': 'Type',
+      'settings.fieldUnit': 'Unit',
+      'settings.fieldRequired': 'Required',
+      'settings.fieldOptions': 'Options',
+      'settings.addField': 'Add field',
+      'settings.hidden': 'Hidden',
+      'settings.show': 'Show',
+      'settings.hide': 'Hide',
+      'settings.newPlantName': 'New plant',
+      'settings.deletePlantConfirm': 'Delete this plant? Existing daily entries will remain in JSON but the plant is hidden from the app.',
+      'settings.deleteFieldConfirm': 'Delete this field? Existing daily values for this field remain in JSON but will no longer be shown.',
+      'library.eyebrow': 'library ・ words',
+      'library.title': 'Things you read and noticed',
+      'library.books': 'Books',
+      'library.notes': 'Notes',
+      'library.articles': 'Articles',
+      'library.add': 'Add',
+      'library.empty': 'No items yet',
+      'library.deleteConfirm': 'Delete this library item?',
+      'library.titleField': 'Title',
+      'library.author': 'Author',
+      'library.source': 'Source',
+      'library.progress': 'Progress %',
+      'library.status': 'Status',
+      'library.tags': 'Tags',
+      'library.body': 'Body',
+      'library.done': 'Done',
+      'study.eyebrow': 'study log ・ mind',
+      'study.title': '{hours} hours in the deep woods',
+      'study.byTopic': 'by topic',
+      'study.empty': 'No study logs yet.',
+      'study.recent': 'recent sessions',
+      'study.noSessions': 'No sessions yet.',
+      'validation.titleRequired': 'Title is required.',
+      'validation.url': 'URL must start with http:// or https://.',
+      'validation.progress': 'Book progress must be between 0 and 100%.',
+      'validation.plantName': 'Plant display name is required.',
+      'validation.plantId': 'Plant ID is required.',
+      'validation.fieldRequired': 'Add at least one field.',
+      'validation.fieldId': 'Field ID is required.',
+      'validation.duplicateField': 'Duplicate field ID: {id}',
+      'validation.fieldLabel': 'Field label is required.',
+      'validation.selectOptions': 'Select fields need at least one option.',
+      'actions.save': 'Save',
+      'actions.saved': 'Saved',
+      'actions.done': 'Done',
+      'actions.pending': 'Pending',
+      'units.days': 'days',
+      'units.hours': 'hours',
+      'units.minutes': 'min',
+      'units.sessions': 'sessions',
+      'units.entries': 'entries',
+      'units.entry': 'entry',
+      'units.count': 'times',
+      'values.empty': '-',
+      'values.good': 'Good',
+      'values.normal': 'Normal',
+      'values.light': 'Light',
+      'plants.mind': 'Learning',
+      'plants.plan': 'Plan',
+      'plants.body': 'Body',
+      'plants.avoid': 'Avoid',
+      'plants.rest': 'Rest',
+      'plants.words': 'Words',
+      'plants.reflect': 'Reflect',
+      'plants.craft': 'Craft',
+      'fields.study_minutes': 'Study time',
+      'fields.study_topic': 'Topic',
+      'fields.study_note': 'Study note',
+      'fields.today_plan': "Today's plan",
+      'fields.workout': 'Moved your body',
+      'fields.body_note': 'Workout note',
+      'fields.avoid_count': 'Count of things you wanted to avoid',
+      'fields.sleep': 'Sleep hours',
+      'fields.sleep_quality': 'Sleep quality',
+      'fields.reading_title': 'What you read',
+      'fields.reading_pages': 'Pages',
+      'fields.reading_note': 'Reading note',
+      'fields.memo': 'Reflection note',
+      'fields.tomorrow': 'Tomorrow',
+      'fields.craft_minutes': 'Making time',
+      'fields.craft_note': 'What you made',
+    },
+  };
 
   const dayName = (d) => ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
   const pad2 = (n) => String(n).padStart(2, '0');
@@ -18,6 +371,29 @@
   const todayKey = () => fmtDate(new Date());
   const nowIso = () => new Date().toISOString();
   const clone = (value) => JSON.parse(JSON.stringify(value));
+  const supportedLanguage = (lang) => (lang === 'en' ? 'en' : 'ja');
+
+  function t(lang, key, params = {}) {
+    const language = supportedLanguage(lang);
+    const template = TRANSLATIONS[language]?.[key] ?? TRANSLATIONS.ja[key] ?? key;
+    return String(template).replace(/\{(\w+)\}/g, (_, name) => (
+      Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : `{${name}}`
+    ));
+  }
+
+  function displayPlantName(plant, lang = 'ja') {
+    const translated = t(lang, `plants.${plant?.id || ''}`);
+    if (translated !== `plants.${plant?.id || ''}`) return translated;
+    return lang === 'en'
+      ? String(plant?.name || plant?.jp || plant?.id || '')
+      : String(plant?.jp || plant?.name || plant?.id || '');
+  }
+
+  function displayFieldLabel(field, lang = 'ja') {
+    const translated = t(lang, `fields.${field?.id || ''}`);
+    if (translated !== `fields.${field?.id || ''}`) return translated;
+    return String(field?.label || field?.id || '');
+  }
 
   function parseDateKey(key) {
     const [y, m, d] = String(key).split('-').map(Number);
@@ -52,6 +428,19 @@
         ],
       },
       {
+        id: 'plan',
+        name: 'plan',
+        jp: '計画',
+        emoji: '🗓️',
+        color: 'pollen',
+        desc: '今日やることを先に決める',
+        visible: true,
+        sort: 15,
+        fields: [
+          { id: 'today_plan', label: '今日の予定', type: 'textarea', required: true },
+        ],
+      },
+      {
         id: 'body',
         name: 'body',
         jp: 'からだ',
@@ -63,6 +452,19 @@
         fields: [
           { id: 'workout', label: '体を動かした', type: 'boolean', required: true },
           { id: 'body_note', label: '運動メモ', type: 'text', required: false },
+        ],
+      },
+      {
+        id: 'avoid',
+        name: 'avoid',
+        jp: '控える',
+        emoji: '🌿',
+        color: 'bloom',
+        desc: 'やらないほど育つ項目',
+        visible: true,
+        sort: 25,
+        fields: [
+          { id: 'avoid_count', label: 'やらなかったらよいことの回数', type: 'avoidance_count', required: true, unit: '回' },
         ],
       },
       {
@@ -206,9 +608,9 @@
   function normalizePlantsFile(value) {
     const fallback = createPlantsFile();
     const src = value && typeof value === 'object' ? value : {};
-    const plants = Array.isArray(src.plants) && src.plants.length
+    const plants = ensureCurrentDefaultPlants(Array.isArray(src.plants) && src.plants.length
       ? src.plants.map(normalizePlant)
-      : fallback.plants;
+      : fallback.plants);
     return {
       ...fallback,
       ...src,
@@ -216,6 +618,15 @@
       updatedAt: src.updatedAt || fallback.updatedAt,
       plants,
     };
+  }
+
+  function ensureCurrentDefaultPlants(plants) {
+    const next = Array.isArray(plants) ? plants.slice() : [];
+    const ids = new Set(next.map((plant) => plant?.id));
+    createDefaultPlants()
+      .filter((plant) => ['plan', 'avoid'].includes(plant.id) && !ids.has(plant.id))
+      .forEach((plant) => next.push(clone(plant)));
+    return next;
   }
 
   function normalizeEntriesFile(value) {
@@ -237,6 +648,16 @@
       schemaVersion: SCHEMA_VERSION,
       updatedAt: src.updatedAt || fallback.updatedAt,
       entries,
+    };
+  }
+
+  function mergePlanEntryValues(currentValues, planValues) {
+    return {
+      ...clone(currentValues || {}),
+      plan: {
+        ...clone((currentValues || {}).plan || {}),
+        ...clone(planValues || {}),
+      },
     };
   }
 
@@ -397,6 +818,7 @@
 
   function isFilled(field, value) {
     if (field.type === 'boolean') return value === true || value === false;
+    if (field.type === 'avoidance_count') return Number.isFinite(Number(value)) && Number(value) >= 0;
     if (field.type === 'number' || field.type === 'duration') return Number.isFinite(Number(value)) && Number(value) > 0;
     return String(value || '').trim().length > 0;
   }
@@ -413,6 +835,7 @@
   function fieldXp(field, value) {
     if (!isFilled(field, value)) return 0;
     if (field.type === 'boolean') return value === true ? 5 : 0;
+    if (field.type === 'avoidance_count') return Math.max(0, 12 - Math.floor(Number(value)) * 3);
     if (field.type === 'duration') return Math.min(12, Math.floor(Number(value) / 15));
     if (field.type === 'number') return Math.min(10, Math.ceil(Number(value)));
     return 3;
@@ -420,7 +843,10 @@
 
   function plantEntryXp(plant, plantValues) {
     if (!isPlantDone(plant, plantValues)) return 0;
-    return 10 + getActiveFields(plant).reduce((sum, field) => sum + fieldXp(field, plantValues?.[field.id]), 0);
+    const fields = getActiveFields(plant);
+    const fieldTotal = fields.reduce((sum, field) => sum + fieldXp(field, plantValues?.[field.id]), 0);
+    if (fields.length > 0 && fields.every((field) => field.type === 'avoidance_count')) return fieldTotal;
+    return 10 + fieldTotal;
   }
 
   function entryHasAnyDonePlant(entry, plants) {
@@ -464,6 +890,7 @@
   function formatValue(field, value) {
     if (!isFilled(field, value)) return '—';
     if (field.type === 'boolean') return value ? 'はい' : 'いいえ';
+    if (field.type === 'avoidance_count') return `${value}${field.unit || '回'}`;
     if (field.type === 'duration') return `${value}分`;
     if (field.unit) return `${value}${field.unit}`;
     return String(value);
@@ -503,6 +930,8 @@
         state: done ? 'done' : 'pending',
       };
     });
+    const planStatus = todayStatus.find((status) => status.plant.id === 'plan') || null;
+    const careStatus = todayStatus.filter((status) => status.plant.id !== 'plan');
     const plantSummaries = plants.map((plant) => {
       const xp = Object.values(entries).reduce((sum, entry) => sum + plantEntryXp(plant, entry.values?.[plant.id]), 0);
       const streak = countPlantStreak(entries, plant, today);
@@ -546,7 +975,11 @@
         done: todayStatus.filter((s) => s.state === 'done').length,
         total: todayStatus.length,
         status: todayStatus,
+        careDone: careStatus.filter((s) => s.state === 'done').length,
+        careTotal: careStatus.length,
+        careStatus,
       },
+      plan: planStatus,
       streak: countStreak(entries, plants, today),
       dayNum: diffDays(normalized.settings.startDate, today) + 1,
       level: { level, totalXp, nextLevel },
@@ -601,11 +1034,17 @@
   async function loadFromDirectory(directoryHandle) {
     const warnings = [];
     const created = [];
+    const [settings, plants, entries, library] = await Promise.all([
+      readJsonFile(directoryHandle, FILES.settings, createSettings, normalizeSettings, warnings, created),
+      readJsonFile(directoryHandle, FILES.plants, createPlantsFile, normalizePlantsFile, warnings, created),
+      readJsonFile(directoryHandle, FILES.entries, createEntriesFile, normalizeEntriesFile, warnings, created),
+      readJsonFile(directoryHandle, FILES.library, createLibraryFile, normalizeLibraryFile, warnings, created),
+    ]);
     const data = {
-      settings: await readJsonFile(directoryHandle, FILES.settings, createSettings, normalizeSettings, warnings, created),
-      plants: await readJsonFile(directoryHandle, FILES.plants, createPlantsFile, normalizePlantsFile, warnings, created),
-      entries: await readJsonFile(directoryHandle, FILES.entries, createEntriesFile, normalizeEntriesFile, warnings, created),
-      library: await readJsonFile(directoryHandle, FILES.library, createLibraryFile, normalizeLibraryFile, warnings, created),
+      settings,
+      plants,
+      entries,
+      library,
     };
     return { data: normalizeData(data), warnings, created };
   }
@@ -676,6 +1115,7 @@
     normalizeEntriesFile,
     normalizeLibraryFile,
     validatePlantsFile,
+    mergePlanEntryValues,
     safeId,
     todayKey,
     fmtDate,
@@ -704,11 +1144,21 @@
     activeLibraryItems,
   };
 
+  const GardenI18n = {
+    LANGUAGE_STORAGE_KEY,
+    TRANSLATIONS,
+    supportedLanguage,
+    t,
+    displayPlantName,
+    displayFieldLabel,
+  };
+
   const initial = createInitialData();
   const initialSummary = derive(initial, todayKey());
   window.GardenSchema = GardenSchema;
   window.GardenCalc = GardenCalc;
   window.GardenStore = GardenStore;
+  window.GardenI18n = GardenI18n;
   window.MOCK = {
     PLANTS: initialSummary.plants,
     BOOKS: initialSummary.library.books,
