@@ -80,8 +80,23 @@ async function testCreatesDefaultFiles() {
     'garden.plants.json',
     'garden.settings.json',
   ]);
-  assert.equal(result.data.plants.plants.length, 6);
+  assert.equal(result.data.plants.plants.length, 8);
   assert.equal(result.data.entries.entries && typeof result.data.entries.entries, 'object');
+}
+
+async function testAddsNewDefaultPlantsToExistingFiles() {
+  const { GardenSchema, GardenStore } = loadDataModule();
+  const plantsFile = GardenSchema.createPlantsFile();
+  plantsFile.plants = plantsFile.plants.filter((plant) => !['plan', 'avoid'].includes(plant.id));
+  const dir = new MemoryDirectoryHandle({
+    'garden.plants.json': JSON.stringify(plantsFile),
+  });
+
+  const result = await GardenStore.loadFromDirectory(dir);
+  const ids = result.data.plants.plants.map((plant) => plant.id);
+
+  assert.equal(ids.includes('plan'), true);
+  assert.equal(ids.includes('avoid'), true);
 }
 
 async function testCalculatesDerivedGardenState() {
@@ -101,11 +116,126 @@ async function testCalculatesDerivedGardenState() {
   const summary = GardenCalc.derive(data, today);
 
   assert.equal(summary.today.done, 3);
-  assert.equal(summary.today.total, 6);
+  assert.equal(summary.today.total, 8);
   assert.equal(summary.streak, 1);
   assert.equal(summary.plants.find((p) => p.id === 'mind').stage >= 1, true);
   assert.equal(summary.study.totalMinutes, 45);
   assert.equal(summary.level.totalXp > 0, true);
+}
+
+function testPlanEntryAwardsXpAndCompletesPlanPlant() {
+  const { GardenSchema, GardenCalc } = loadDataModule();
+  const data = GardenSchema.createInitialData();
+  const today = '2026-04-29';
+  data.entries.entries[today] = {
+    date: today,
+    values: {
+      plan: { today_plan: 'Write the plan before opening mail.' },
+    },
+    updatedAt: '2026-04-29T00:00:00.000Z',
+  };
+
+  const summary = GardenCalc.derive(data, today);
+  const plan = summary.plants.find((plant) => plant.id === 'plan');
+
+  assert.equal(summary.today.status.find((item) => item.plant.id === 'plan').state, 'done');
+  assert.equal(plan.xp > 0, true);
+  assert.equal(summary.level.totalXp >= plan.xp, true);
+}
+
+function testDeriveSeparatesPlanFromCareProgress() {
+  const { GardenSchema, GardenCalc } = loadDataModule();
+  const data = GardenSchema.createInitialData();
+  const today = '2026-04-29';
+  data.entries.entries[today] = {
+    date: today,
+    values: {
+      plan: { today_plan: 'Write the plan before opening mail.' },
+      avoid: { avoid_count: 0 },
+    },
+    updatedAt: '2026-04-29T00:00:00.000Z',
+  };
+
+  const summary = GardenCalc.derive(data, today);
+
+  assert.equal(summary.plan.state, 'done');
+  assert.equal(summary.plan.value, 'Write the plan before opening mail.');
+  assert.equal(summary.today.done, 2);
+  assert.equal(summary.today.total, 8);
+  assert.equal(summary.today.careDone, 1);
+  assert.equal(summary.today.careTotal, 7);
+  assert.equal(summary.today.careStatus.some((item) => item.plant.id === 'plan'), false);
+}
+
+function testMergesPlanEntryWithoutDroppingCareValues() {
+  const { GardenSchema } = loadDataModule();
+  const data = GardenSchema.createInitialData();
+  const today = '2026-04-29';
+  data.entries.entries[today] = {
+    date: today,
+    values: {
+      mind: { study_minutes: 45, study_topic: 'go' },
+      avoid: { avoid_count: 0 },
+    },
+    updatedAt: '2026-04-29T00:00:00.000Z',
+  };
+
+  const values = GardenSchema.mergePlanEntryValues(data.entries.entries[today].values, {
+    today_plan: 'Write the plan before opening mail.',
+  });
+
+  assert.equal(JSON.stringify(values.mind), JSON.stringify({ study_minutes: 45, study_topic: 'go' }));
+  assert.equal(JSON.stringify(values.avoid), JSON.stringify({ avoid_count: 0 }));
+  assert.equal(JSON.stringify(values.plan), JSON.stringify({ today_plan: 'Write the plan before opening mail.' }));
+}
+
+function testI18nHasRequiredJapaneseAndEnglishKeys() {
+  const { GardenI18n } = loadDataModule();
+  const keys = [
+    'nav.dashboard',
+    'nav.plan',
+    'nav.today',
+    'storage.connectTitle',
+    'plan.title',
+    'today.title',
+    'settings.title',
+    'actions.save',
+    'plants.plan',
+    'fields.today_plan',
+  ];
+
+  keys.forEach((key) => {
+    assert.notEqual(GardenI18n.t('ja', key), key);
+    assert.notEqual(GardenI18n.t('en', key), key);
+  });
+  assert.equal(GardenI18n.LANGUAGE_STORAGE_KEY, 'garden.language');
+}
+
+function testAvoidanceCountAwardsMoreXpWhenCloserToZero() {
+  const { GardenSchema, GardenCalc } = loadDataModule();
+  const data = GardenSchema.createInitialData();
+  const today = '2026-04-29';
+  const avoid = data.plants.plants.find((plant) => plant.id === 'avoid');
+
+  assert.equal(GardenCalc.isPlantDone(avoid, { avoid_count: 0 }), true);
+  assert.equal(GardenCalc.plantEntryXp(avoid, { avoid_count: 0 }), 12);
+  assert.equal(GardenCalc.plantEntryXp(avoid, { avoid_count: 1 }), 9);
+  assert.equal(GardenCalc.plantEntryXp(avoid, { avoid_count: 2 }), 6);
+  assert.equal(GardenCalc.plantEntryXp(avoid, { avoid_count: 3 }), 3);
+  assert.equal(GardenCalc.plantEntryXp(avoid, { avoid_count: 4 }), 0);
+
+  data.entries.entries[today] = {
+    date: today,
+    values: {
+      avoid: { avoid_count: 0 },
+    },
+    updatedAt: '2026-04-29T00:00:00.000Z',
+  };
+
+  const summary = GardenCalc.derive(data, today);
+
+  assert.equal(summary.today.status.find((item) => item.plant.id === 'avoid').state, 'done');
+  assert.equal(summary.plants.find((plant) => plant.id === 'avoid').xp, 12);
 }
 
 async function testReportsBrokenJson() {
@@ -137,7 +267,7 @@ async function testReportsUnsupportedSchemaVersion() {
   assert.equal(result.warnings[0].file, 'garden.plants.json');
   assert.match(result.warnings[0].message, /schemaVersion/);
   assert.equal(result.data.plants.schemaVersion, 1);
-  assert.equal(result.data.plants.plants.length, 6);
+  assert.equal(result.data.plants.plants.length, 8);
 }
 
 function testValidatesDuplicatePlantAndFieldIds() {
@@ -175,7 +305,13 @@ async function testRejectsInvalidPlantsFileOnSave() {
 
 async function run() {
   await testCreatesDefaultFiles();
+  await testAddsNewDefaultPlantsToExistingFiles();
   await testCalculatesDerivedGardenState();
+  testPlanEntryAwardsXpAndCompletesPlanPlant();
+  testDeriveSeparatesPlanFromCareProgress();
+  testMergesPlanEntryWithoutDroppingCareValues();
+  testI18nHasRequiredJapaneseAndEnglishKeys();
+  testAvoidanceCountAwardsMoreXpWhenCloserToZero();
   await testReportsBrokenJson();
   await testReportsUnsupportedSchemaVersion();
   testValidatesDuplicatePlantAndFieldIds();
